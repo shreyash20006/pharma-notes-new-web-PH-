@@ -100,9 +100,13 @@ export default function Dashboard() {
 
   if (loading || !isAuthReady) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-surface text-on-surface-variant">
-        <Loader2 className="h-12 w-12 animate-spin mb-4 text-primary" />
-        <p className="font-medium">Loading your profile...</p>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mb-4"
+        />
+        <p className="text-white/60">Loading dashboard...</p>
       </div>
     );
   }

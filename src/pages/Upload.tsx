@@ -80,6 +80,12 @@ export default function Upload() {
     setUploading(true);
     setError(null);
 
+    // Timeout for slow connections
+    const timeoutId = setTimeout(() => {
+      setUploading(false);
+      setError('Upload timed out. Please check your internet connection and try again. Make sure Firestore rules are configured properly.');
+    }, 15000);
+
     try {
       await addDoc(collection(db, 'notes'), {
         ...form,
@@ -94,6 +100,7 @@ export default function Upload() {
         isPremium: false, // User uploads are free, admin can change
       });
 
+      clearTimeout(timeoutId);
       setSuccess(true);
       setForm({
         title: '',
@@ -105,9 +112,10 @@ export default function Upload() {
         driveLink: '',
       });
     } catch (err: any) {
+      clearTimeout(timeoutId);
       console.error('Upload error:', err);
       if (err.code === 'permission-denied') {
-        setError('Permission denied. Please contact admin to enable uploads.');
+        setError('Permission denied. Admin needs to update Firestore security rules in Firebase Console.');
       } else {
         setError(err.message || 'Failed to upload. Please try again.');
       }
