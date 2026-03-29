@@ -4,6 +4,7 @@ import path from "path";
 import fs from "fs/promises";
 import Razorpay from "razorpay";
 import crypto from "crypto";
+import { Cashfree } from "cashfree-pg";
 
 async function startServer() {
   const app = express();
@@ -24,6 +25,35 @@ async function startServer() {
       key_id,
       key_secret,
     });
+  };
+
+  // Cashfree lazy initialization helper
+  const initCashfree = () => {
+    const appId = process.env.VITE_CASHFREE_APP_ID;
+    const secretKey = process.env.CASHFREE_SECRET_KEY;
+    const env = (process.env.VITE_CASHFREE_ENV || "SANDBOX").toUpperCase();
+
+    if (!appId || !secretKey) {
+      throw new Error("Cashfree API keys are missing. Please set VITE_CASHFREE_APP_ID and CASHFREE_SECRET_KEY in environment variables.");
+    }
+
+    console.log(`Initializing Cashfree Server SDK in ${env} mode`);
+
+    if (!Cashfree) {
+      throw new Error("Cashfree SDK failed to load. Please check your dependencies.");
+    }
+
+    const cf = Cashfree as any;
+    cf.XClientId = appId;
+    cf.XClientSecret = secretKey;
+    
+    // Defensive check for Environment object to avoid "undefined" errors
+    if (cf.Environment) {
+      cf.XEnvironment = env === "PRODUCTION" ? cf.Environment.PRODUCTION : cf.Environment.SANDBOX;
+    } else {
+      // Fallback to string values if Environment enum is not found on the object
+      cf.XEnvironment = env === "PRODUCTION" ? "PRODUCTION" : "SANDBOX";
+    }
   };
 
   // API routes
@@ -71,6 +101,57 @@ async function startServer() {
       console.error("Razorpay verification error:", error);
       res.status(500).json({ 
         error: error instanceof Error ? error.message : "Failed to verify Razorpay payment" 
+      });
+    }
+  });
+
+  // Cashfree routes
+  app.post("/api/cashfree/order", async (req, res) => {
+    try {
+      initCashfree();
+      const { amount, customerId, customerPhone, customerEmail, orderId } = req.body;
+
+      const request = {
+        order_amount: amount,
+        order_currency: "INR",
+        order_id: orderId || `order_${Date.now()}`,
+        customer_details: {
+          customer_id: customerId,
+          customer_phone: customerPhone,
+          customer_email: customerEmail,
+        },
+        order_meta: {
+          return_url: `${req.headers.origin}/dashboard?order_id={order_id}`,
+        },
+      };
+
+      const response = await (Cashfree as any).PGCreateOrder("2023-08-01", request);
+      console.log("Cashfree API Response Status:", response.status);
+      console.log("Cashfree API Response Data:", JSON.stringify(response.data, null, 2));
+      
+      if (response.data && response.data.message) {
+        console.warn("Cashfree API Warning/Error Message:", response.data.message);
+      }
+
+      res.json(response.data);
+    } catch (error: any) {
+      console.error("Cashfree order error details:", error.response?.data || error.message);
+      res.status(500).json({ 
+        error: error.response?.data?.message || error.message || "Failed to create Cashfree order" 
+      });
+    }
+  });
+
+  app.get("/api/cashfree/verify/:orderId", async (req, res) => {
+    try {
+      initCashfree();
+      const { orderId } = req.params;
+      const response = await (Cashfree as any).PGGetOrder("2023-08-01", orderId);
+      res.json(response.data);
+    } catch (error) {
+      console.error("Cashfree verification error:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to verify Cashfree payment" 
       });
     }
   });

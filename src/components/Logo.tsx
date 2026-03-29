@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { BookOpen } from 'lucide-react';
+import { HardDrive } from 'lucide-react';
 
 export default function Logo({ className = "" }: { className?: string }) {
   return (
@@ -13,14 +13,14 @@ export default function Logo({ className = "" }: { className?: string }) {
           type: "spring",
           stiffness: 100 
         }}
-        className="bg-blue-600 p-1.5 rounded-lg shadow-lg shadow-blue-200 flex items-center justify-center"
+        className="bg-primary p-1.5 rounded-lg shadow-lg shadow-primary/20 flex items-center justify-center"
       >
         <motion.div
           initial={{ scale: 0.5 }}
           animate={{ scale: 1 }}
           transition={{ delay: 0.3, duration: 0.5 }}
         >
-          <BookOpen className="h-6 w-6 text-white" />
+          <HardDrive className="h-6 w-6 text-white" />
         </motion.div>
       </motion.div>
       
@@ -30,8 +30,8 @@ export default function Logo({ className = "" }: { className?: string }) {
         transition={{ delay: 0.5, duration: 0.5 }}
         className="flex flex-col"
       >
-        <span className="text-xl font-bold text-gray-900 tracking-tight leading-none">
-          Pharma<span className="text-blue-600">Notes</span>
+        <span className="text-xl font-headline font-bold text-on-surface tracking-tight leading-none">
+          Notes<span className="text-primary">Drive</span>
         </span>
         <motion.span 
           initial={{ opacity: 0 }}
@@ -39,7 +39,7 @@ export default function Logo({ className = "" }: { className?: string }) {
           transition={{ delay: 1, duration: 1 }}
           className="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-500 mt-0.5"
         >
-          Digital Library
+          Premium Marketplace
         </motion.span>
       </motion.div>
     </div>

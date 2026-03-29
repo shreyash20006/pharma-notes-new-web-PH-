@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { ai } from '../lib/gemini';
-import { useAuth } from '../hooks/useAuth';
+import { useFirebase } from '../context/FirebaseContext';
 import { Brain, Send, Copy, CheckCircle2, Loader2, Sparkles, AlertCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { motion } from 'motion/react';
 
 export default function Summarizer() {
-  const { user, profile } = useAuth();
+  const { user, userProfile } = useFirebase();
   const [inputText, setInputText] = useState('');
   const [summary, setSummary] = useState('');
   const [loading, setLoading] = useState(false);

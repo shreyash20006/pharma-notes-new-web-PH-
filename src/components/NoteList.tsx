@@ -1,132 +1,143 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-import { useAuth } from '../hooks/useAuth';
-import { Search, Filter, Loader2 } from 'lucide-react';
+import { db } from '../lib/firebase';
+import { useFirebase } from '../context/FirebaseContext';
+import { collection, query, getDocs, orderBy } from 'firebase/firestore';
+import { Search, Filter, Loader2, SlidersHorizontal } from 'lucide-react';
 import NoteCard from './NoteCard';
 
 interface Note {
   id: string;
   title: string;
   description?: string;
-  file_url: string;
-  uploaded_by: string;
-  created_at: string;
-  // Optional legacy fields for UI compatibility
-  subject?: string;
-  course?: string;
+  fileUrl: string;
+  uploadedBy: string;
+  createdAt: any;
+  category?: string;
+  university?: string;
+  courseCode?: string;
+  price?: number;
 }
 
 export default function NoteList() {
-  const { profile } = useAuth();
+  const { userProfile } = useFirebase();
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedSubject, setSelectedSubject] = useState('All');
+  const [selectedCategory, setSelectedCategory] = useState('All');
 
   useEffect(() => {
     async function fetchNotes() {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-      if (!supabaseUrl || !supabaseAnonKey) {
-        console.warn("Supabase is not configured. Using mock data.");
+      try {
+        const q = query(collection(db, 'notes'), orderBy('createdAt', 'desc'));
+        const snapshot = await getDocs(q);
+        const data = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Note[];
+        
+        setNotes(data);
+      } catch (error) {
+        console.error("Error fetching notes:", error);
+        // Fallback to mock data if there's an error (e.g. no collection yet)
         setNotes([
           {
             id: '1',
-            title: 'Anatomy & Physiology I',
+            title: 'Advanced Thermodynamics',
             description: 'Comprehensive study of human anatomy and physiology, focusing on skeletal and muscular systems.',
-            file_url: '#',
-            uploaded_by: 'system',
-            created_at: new Date().toISOString(),
-            subject: 'Anatomy',
-            course: 'B.Pharma 1st Sem'
+            fileUrl: '#',
+            uploadedBy: 'system',
+            createdAt: new Date().toISOString(),
+            category: 'Engineering',
+            university: 'MIT',
+            courseCode: 'ME-401',
+            price: 499
           },
           {
             id: '2',
             title: 'Pharmaceutical Analysis',
             description: 'Introduction to quality control and analytical techniques in pharmacy.',
-            file_url: '#',
-            uploaded_by: 'system',
-            created_at: new Date().toISOString(),
-            subject: 'Analysis',
-            course: 'B.Pharma 1st Sem'
+            fileUrl: '#',
+            uploadedBy: 'system',
+            createdAt: new Date().toISOString(),
+            category: 'Pharmacy',
+            university: 'Stanford',
+            courseCode: 'PH-102',
+            price: 299
           }
         ]);
+      } finally {
         setLoading(false);
-        return;
       }
-
-      const { data, error } = await supabase
-        .from('notes')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (!error && data) {
-        setNotes(data);
-      }
-      setLoading(false);
     }
 
     fetchNotes();
   }, []);
 
-  const subjects = ['All', ...Array.from(new Set(notes.map(n => n.subject)))];
+  const categories = ['All', ...Array.from(new Set(notes.map(n => n.category || 'Uncategorized')))];
 
   const filteredNotes = notes.filter(note => {
     const matchesSearch = note.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           (note.description?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
-    const matchesSubject = selectedSubject === 'All' || note.subject === selectedSubject;
-    return matchesSearch && matchesSubject;
+    const matchesCategory = selectedCategory === 'All' || note.category === selectedCategory;
+    return matchesSearch && matchesCategory;
   });
 
   return (
     <div className="space-y-12">
-      <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-        <div className="relative flex-grow sm:w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+      <div className="flex flex-col md:flex-row gap-6 items-center justify-between bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant">
+        <div className="relative flex-grow w-full">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-outline" />
           <input 
             type="text" 
-            placeholder="Search notes..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+            placeholder="Search knowledge repository..."
+            className="w-full pl-12 pr-4 py-4 bg-surface-container-low border-none rounded-2xl focus:ring-2 focus:ring-primary/40 outline-none transition-all font-body text-on-surface"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="relative sm:w-48">
-          <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-          <select 
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none appearance-none transition-all"
-            value={selectedSubject}
-            onChange={(e) => setSelectedSubject(e.target.value)}
-          >
-            {subjects.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
+        <div className="flex gap-4 w-full md:w-auto">
+          <div className="relative flex-grow md:w-64">
+            <SlidersHorizontal className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-outline" />
+            <select 
+              className="w-full pl-12 pr-10 py-4 bg-surface-container-low border-none rounded-2xl focus:ring-2 focus:ring-primary/40 outline-none appearance-none transition-all font-body text-on-surface"
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+            >
+              {categories.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
         </div>
       </div>
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-32 text-gray-400">
-          <Loader2 className="h-10 w-10 animate-spin mb-4" />
-          <p className="font-medium">Loading notes...</p>
+        <div className="flex flex-col items-center justify-center py-32 text-on-surface-variant">
+          <Loader2 className="h-12 w-12 animate-spin mb-4 text-primary" />
+          <p className="font-bold font-headline">Syncing with Repository...</p>
         </div>
       ) : filteredNotes.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredNotes.map((note) => (
             <NoteCard 
               key={note.id} 
-              note={note} 
-              isPremium={profile?.is_premium} 
+              note={{
+                ...note,
+                file_url: note.fileUrl,
+                uploaded_by: note.uploadedBy,
+                created_at: note.createdAt?.toDate ? note.createdAt.toDate().toISOString() : note.createdAt,
+                course_code: note.courseCode
+              }} 
+              isPremium={userProfile?.isPremium} 
               onUnlock={() => window.location.href = '/premium'}
             />
           ))}
         </div>
       ) : (
-        <div className="text-center py-32">
-          <div className="bg-gray-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Search className="h-8 w-8 text-gray-400" />
+        <div className="text-center py-32 bg-surface-container-low rounded-3xl border border-outline-variant border-dashed">
+          <div className="bg-surface-container-high w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-8">
+            <Search className="h-10 w-10 text-outline" />
           </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">No notes found</h3>
-          <p className="text-gray-500">Try searching with different keywords or filters.</p>
+          <h3 className="text-2xl font-headline font-bold text-on-surface mb-2">No documents found</h3>
+          <p className="text-on-surface-variant font-body">Try adjusting your search parameters or category filters.</p>
         </div>
       )}
     </div>

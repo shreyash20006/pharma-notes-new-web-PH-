@@ -1,30 +1,37 @@
 import { useState } from 'react';
-import { useAuth } from '../hooks/useAuth';
-import { supabase } from '../lib/supabase';
-import { ShieldCheck, CheckCircle2, Zap, Send, Loader2, AlertCircle } from 'lucide-react';
+import { useFirebase } from '../context/FirebaseContext';
+import { db, OperationType, handleFirestoreError } from '../lib/firebase';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { ShieldCheck, CheckCircle2, Zap, Loader2, AlertCircle, Star, Crown, Rocket, CreditCard } from 'lucide-react';
 import { motion } from 'motion/react';
 
 declare global {
   interface Window {
     Razorpay: any;
+    Cashfree: any;
   }
 }
 
 export default function Premium() {
-  const { user, profile } = useAuth();
+  const { user, userProfile, loading: authLoading, isAuthReady } = useFirebase();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'cashfree'>('razorpay');
 
-  const handlePayment = async () => {
-    if (!user) {
-      setError('Please login to upgrade to Premium.');
-      return;
-    }
+  if (authLoading || !isAuthReady) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-surface text-on-surface-variant">
+        <Loader2 className="h-12 w-12 animate-spin mb-4 text-primary" />
+        <p className="font-medium">Loading subscription details...</p>
+      </div>
+    );
+  }
 
-    setLoading(true);
-    setError('');
-
+  const handleRazorpayPayment = async () => {
     try {
+      if (!window.Razorpay) {
+        throw new Error('Razorpay SDK not loaded. Please refresh the page.');
+      }
       // 1. Create order on server
       const response = await fetch('/api/razorpay/order', {
         method: 'POST',
@@ -39,8 +46,8 @@ export default function Premium() {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID,
         amount: order.amount,
         currency: order.currency,
-        name: "PharmaNotes Premium",
-        description: "One-time subscription for B.Pharma study materials",
+        name: "NotesDrive Premium",
+        description: "One-time subscription for premium study materials",
         order_id: order.id,
         handler: async (response: any) => {
           // 3. Verify payment on server
@@ -53,27 +60,26 @@ export default function Premium() {
           const verifyData = await verifyResponse.json();
 
           if (verifyData.success) {
-            // 4. Update user status in Supabase
-            const { error: updateError } = await supabase
-              .from('users')
-              .update({ is_premium: true })
-              .eq('email', user.email);
-
-            if (!updateError) {
+            // 4. Update user status in Firestore
+            try {
+              await updateDoc(doc(db, 'users', user!.uid), {
+                isPremium: true,
+                premiumSince: serverTimestamp()
+              });
               window.location.href = '/dashboard?success=true';
-            } else {
-              setError('Payment successful but failed to update profile. Please contact support.');
+            } catch (dbErr) {
+              handleFirestoreError(dbErr, OperationType.UPDATE, `users/${user!.uid}`);
             }
           } else {
             setError('Payment verification failed.');
           }
         },
         prefill: {
-          name: user.displayName,
-          email: user.email
+          name: userProfile?.displayName || user?.displayName || user?.email?.split('@')[0],
+          email: user?.email
         },
         theme: {
-          color: "#2563eb"
+          color: "#3525cd" // primary color
         }
       };
 
@@ -81,113 +87,247 @@ export default function Premium() {
       rzp.open();
     } catch (err) {
       console.error(err);
-      setError('Failed to initiate payment. Please try again.');
+      setError('Failed to initiate Razorpay payment. Please try again.');
+    }
+  };
+
+  const handleCashfreePayment = async () => {
+    try {
+      if (!window.Cashfree) {
+        throw new Error('Cashfree SDK not loaded. Please refresh the page.');
+      }
+
+      const env = import.meta.env.VITE_CASHFREE_ENV || 'SANDBOX';
+      const mode = env.toUpperCase() === 'PRODUCTION' ? 'production' : 'sandbox';
+      
+      console.log("Cashfree Environment Config:", env);
+      console.log("Initializing Cashfree SDK in mode:", mode);
+
+      const cashfree = window.Cashfree({ mode });
+
+      // 1. Create order on server
+      console.log("Requesting Cashfree order from server...");
+      const response = await fetch('/api/cashfree/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: 499,
+          customerId: user!.uid,
+          customerPhone: userProfile?.phone || "9999999999",
+          customerEmail: user!.email
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Server-side order creation failed:", errorData);
+        throw new Error(errorData.error || 'Failed to create order on server');
+      }
+
+      const order = await response.json();
+      console.log("Cashfree Order created successfully:", order);
+
+      if (!order.payment_session_id) {
+        console.error("Payment session ID missing in response data:", order);
+        throw new Error('Payment session ID missing from server response.');
+      }
+
+      // 2. Initialize Checkout
+      const checkoutOptions = {
+        paymentSessionId: order.payment_session_id,
+        redirectTarget: "_self",
+      };
+
+      console.log("Opening Cashfree Checkout with options:", checkoutOptions);
+      cashfree.checkout(checkoutOptions);
+    } catch (err: any) {
+      console.error("Cashfree Payment Error:", err);
+      setError(err.message || 'Failed to initiate Cashfree payment. Please try again.');
+    }
+  };
+
+  const handleUpgrade = async () => {
+    if (!user) {
+      setError('Please login to upgrade to Premium.');
+      return;
+    }
+
+    console.log("Initiating upgrade with method:", paymentMethod);
+    setLoading(true);
+    setError('');
+
+    try {
+      if (paymentMethod === 'razorpay') {
+        await handleRazorpayPayment();
+      } else {
+        await handleCashfreePayment();
+      }
+    } catch (err: any) {
+      console.error("Upgrade error:", err);
+      setError(err.message || 'An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-      <div className="text-center mb-16">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">Choose Your Plan</h1>
-        <p className="text-gray-500 max-w-2xl mx-auto">
-          Invest in your future with our premium study materials and advanced AI tools.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-        {/* Free Plan */}
-        <div className="bg-white p-10 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col">
-          <div className="mb-8">
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Free Plan</h3>
-            <p className="text-gray-500 text-sm">Perfect for getting started.</p>
-          </div>
-          <div className="mb-8">
-            <span className="text-4xl font-bold text-gray-900">₹0</span>
-            <span className="text-gray-400 text-sm">/forever</span>
-          </div>
-          <ul className="space-y-4 mb-10 flex-grow">
-            {[
-              "Access to Free Notes",
-              "Basic AI Summarizer",
-              "Basic MCQ Generator",
-              "Join Telegram Community"
-            ].map((item, i) => (
-              <li key={i} className="flex items-center gap-3 text-gray-600 text-sm">
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
-                {item}
-              </li>
-            ))}
-          </ul>
-          <button 
-            disabled 
-            className="w-full bg-gray-100 text-gray-400 px-6 py-4 rounded-2xl font-bold text-lg cursor-not-allowed"
+    <div className="min-h-screen bg-surface pt-32 pb-20">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8">
+        <div className="text-center mb-20">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="inline-flex items-center gap-2 px-4 py-1.5 bg-primary/10 text-primary rounded-full font-label text-[10px] font-bold uppercase tracking-widest mb-8"
           >
-            Current Plan
-          </button>
+            <Star className="w-3 h-3 fill-primary" />
+            Premium Access
+          </motion.div>
+          <h1 className="text-6xl font-headline font-extrabold text-on-surface tracking-tight mb-6">
+            Elevate Your <span className="text-primary">Knowledge</span>
+          </h1>
+          <p className="text-on-surface-variant text-xl font-body max-w-2xl mx-auto leading-relaxed">
+            Invest in precision-engineered study materials and advanced archival tools for high-performance learning.
+          </p>
         </div>
 
-        {/* Premium Plan */}
-        <div className="bg-white p-10 rounded-[2.5rem] border-2 border-blue-600 shadow-xl shadow-blue-50 flex flex-col relative overflow-hidden">
-          <div className="absolute top-0 right-0 bg-blue-600 text-white px-6 py-2 rounded-bl-2xl text-xs font-bold uppercase tracking-wider">
-            Best Value
-          </div>
-          <div className="mb-8">
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Premium Plan</h3>
-            <p className="text-gray-500 text-sm">Complete access for serious students.</p>
-          </div>
-          <div className="mb-8">
-            <span className="text-4xl font-bold text-gray-900">₹499</span>
-            <span className="text-gray-400 text-sm">/one-time</span>
-          </div>
-          <ul className="space-y-4 mb-10 flex-grow">
-            {[
-              "Unlimited PDF Downloads",
-              "Exclusive Premium Notes",
-              "Ad-free Experience",
-              "Priority AI Tool Access",
-              "Priority Support",
-              "Lifetime Access"
-            ].map((item, i) => (
-              <li key={i} className="flex items-center gap-3 text-gray-600 text-sm font-medium">
-                <CheckCircle2 className="h-5 w-5 text-blue-600" />
-                {item}
-              </li>
-            ))}
-          </ul>
-          
-          {profile?.is_premium ? (
-            <div className="bg-blue-50 text-blue-700 px-6 py-4 rounded-2xl font-bold text-lg text-center flex items-center justify-center gap-2">
-              <ShieldCheck className="h-6 w-6" />
-              Premium Active
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 max-w-5xl mx-auto">
+          {/* Free Plan */}
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="bg-surface-container-lowest p-12 rounded-[3rem] border border-outline-variant flex flex-col group hover:shadow-2xl hover:shadow-on-surface/5 transition-all"
+          >
+            <div className="mb-10">
+              <div className="w-14 h-14 bg-surface-container-high rounded-2xl flex items-center justify-center mb-6 group-hover:bg-primary/10 transition-colors">
+                <Rocket className="w-7 h-7 text-on-surface-variant group-hover:text-primary" />
+              </div>
+              <h3 className="text-2xl font-headline font-bold text-on-surface mb-2">Standard Access</h3>
+              <p className="text-on-surface-variant font-body text-sm">Essential tools for baseline management.</p>
             </div>
-          ) : (
+            
+            <div className="mb-10">
+              <div className="flex items-baseline gap-1">
+                <span className="text-5xl font-headline font-extrabold text-on-surface">₹0</span>
+                <span className="text-on-surface-variant font-label text-xs uppercase tracking-widest font-bold">/ Lifetime</span>
+              </div>
+            </div>
+
+            <ul className="space-y-5 mb-12 flex-grow">
+              {[
+                "Access to Open Repository",
+                "Basic Search & Filters",
+                "Standard PDF Viewing",
+                "Community Support Access"
+              ].map((item, i) => (
+                <li key={i} className="flex items-center gap-4 text-on-surface-variant text-sm font-medium font-body">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+
             <button 
-              onClick={handlePayment}
-              disabled={loading}
-              className="w-full bg-blue-600 text-white px-6 py-4 rounded-2xl font-bold text-lg hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
+              disabled 
+              className="w-full bg-surface-container-high text-on-surface-variant px-8 py-5 rounded-2xl font-headline font-bold text-lg cursor-not-allowed opacity-60"
             >
-              {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Zap className="h-6 w-6" />}
-              Upgrade Now
+              Active Baseline
             </button>
-          )}
-          
-          {error && (
-            <div className="mt-4 p-4 bg-red-50 text-red-600 rounded-xl flex items-center gap-3 text-sm font-medium">
-              <AlertCircle className="h-5 w-5" />
-              {error}
-            </div>
-          )}
-        </div>
-      </div>
+          </motion.div>
 
-      <div className="mt-20 text-center">
-        <p className="text-gray-400 text-sm mb-6">Secure payments powered by Razorpay</p>
-        <div className="flex justify-center gap-8 grayscale opacity-50">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/8/89/Razorpay_logo.svg" alt="Razorpay" className="h-6" />
-          <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" alt="PayPal" className="h-6" />
-          <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-6" />
+          {/* Premium Plan */}
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="bg-surface-container-lowest p-12 rounded-[3rem] border-2 border-primary shadow-2xl shadow-primary/10 flex flex-col relative overflow-hidden group"
+          >
+            <div className="absolute top-0 right-0 bg-primary text-white px-8 py-3 rounded-bl-3xl font-label text-[10px] font-bold uppercase tracking-widest">
+              High Performance
+            </div>
+            
+            <div className="mb-10">
+              <div className="w-14 h-14 bg-primary-container/20 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-primary transition-all duration-300">
+                <Crown className="w-7 h-7 text-primary group-hover:text-white" />
+              </div>
+              <h3 className="text-2xl font-headline font-bold text-on-surface mb-2">NotesDrive Pro</h3>
+              <p className="text-on-surface-variant font-body text-sm">Full-spectrum archival & analysis suite.</p>
+            </div>
+
+            <div className="mb-10">
+              <div className="flex items-baseline gap-1">
+                <span className="text-5xl font-headline font-extrabold text-on-surface">₹499</span>
+                <span className="text-on-surface-variant font-label text-xs uppercase tracking-widest font-bold">/ One-Time</span>
+              </div>
+            </div>
+
+            <ul className="space-y-5 mb-12 flex-grow">
+              {[
+                "Unlimited Archival Downloads",
+                "Exclusive Premium Repository",
+                "Zero-Latency Interface",
+                "Priority Contribution Verification",
+                "Advanced Metadata Analytics",
+                "Lifetime Archival Access"
+              ].map((item, i) => (
+                <li key={i} className="flex items-center gap-4 text-on-surface font-bold text-sm font-body">
+                  <CheckCircle2 className="h-5 w-5 text-primary" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+            
+            {userProfile?.isPremium ? (
+              <div className="bg-primary/5 text-primary px-8 py-5 rounded-2xl font-headline font-bold text-lg text-center flex items-center justify-center gap-3 border border-primary/20">
+                <ShieldCheck className="h-6 w-6" />
+                Pro Status Verified
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="flex gap-4">
+                  <button 
+                    onClick={() => setPaymentMethod('razorpay')}
+                    className={`flex-1 flex items-center justify-center gap-2 p-4 rounded-2xl border-2 transition-all ${paymentMethod === 'razorpay' ? 'border-primary bg-primary/5 text-primary' : 'border-outline-variant text-on-surface-variant'}`}
+                  >
+                    <CreditCard className="w-5 h-5" />
+                    <span className="font-bold text-sm">Razorpay</span>
+                  </button>
+                  <button 
+                    onClick={() => setPaymentMethod('cashfree')}
+                    className={`flex-1 flex items-center justify-center gap-2 p-4 rounded-2xl border-2 transition-all ${paymentMethod === 'cashfree' ? 'border-primary bg-primary/5 text-primary' : 'border-outline-variant text-on-surface-variant'}`}
+                  >
+                    <CreditCard className="w-5 h-5" />
+                    <span className="font-bold text-sm">Cashfree</span>
+                  </button>
+                </div>
+
+                <button 
+                  onClick={handleUpgrade}
+                  disabled={loading}
+                  className="w-full bg-primary text-white px-8 py-5 rounded-2xl font-headline font-extrabold text-xl hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50"
+                >
+                  {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Zap className="h-6 w-6 fill-white" />}
+                  Initialize Upgrade
+                </button>
+              </div>
+            )}
+            
+            {error && (
+              <div className="mt-6 p-4 bg-error/10 text-error rounded-2xl flex items-center gap-3 text-sm font-bold border border-error/20">
+                <AlertCircle className="h-5 w-5" />
+                {error}
+              </div>
+            )}
+          </motion.div>
+        </div>
+
+        <div className="mt-24 text-center">
+          <p className="text-on-surface-variant font-label text-[10px] font-bold uppercase tracking-widest mb-8 opacity-60">Secure Transaction Gateway</p>
+          <div className="flex flex-wrap justify-center gap-12 grayscale opacity-30 hover:opacity-60 transition-opacity items-center">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/8/89/Razorpay_logo.svg" alt="Razorpay" className="h-5" />
+            <img src="https://www.cashfree.com/wp-content/uploads/2021/04/Cashfree-Logo-1.png" alt="Cashfree" className="h-8" />
+            <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" alt="PayPal" className="h-5" />
+            <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-5" />
+            <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-5" />
+          </div>
         </div>
       </div>
     </div>

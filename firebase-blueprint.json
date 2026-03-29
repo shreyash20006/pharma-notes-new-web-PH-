@@ -1,22 +1,107 @@
 {
   "entities": {
-    "users": {
-      "title": "User Profile",
-      "description": "User profile information stored in Firestore (optional, primary data is in Supabase)",
+    "User": {
+      "title": "User",
+      "description": "A user of the NotesDrive platform.",
       "type": "object",
       "properties": {
-        "email": { "type": "string", "format": "email" },
-        "name": { "type": "string" },
-        "is_premium": { "type": "boolean" },
-        "created_at": { "type": "string", "format": "date-time" }
+        "uid": {
+          "type": "string",
+          "description": "The unique identifier for the user (Firebase Auth UID)."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The user's email address."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "The user's display name."
+        },
+        "photoURL": {
+          "type": "string",
+          "format": "uri",
+          "description": "The user's profile picture URL."
+        },
+        "isPremium": {
+          "type": "boolean",
+          "description": "Whether the user has a premium subscription."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the user account was created."
+        }
       },
-      "required": ["email", "name"]
+      "required": ["uid", "email"]
+    },
+    "Note": {
+      "title": "Note",
+      "description": "A study note uploaded to the platform.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The unique identifier for the note."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the note."
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief description of the note."
+        },
+        "fileUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "The URL to the uploaded file (PDF/Image)."
+        },
+        "fileName": {
+          "type": "string",
+          "description": "The original name of the file."
+        },
+        "fileType": {
+          "type": "string",
+          "description": "The MIME type of the file."
+        },
+        "uploadedBy": {
+          "type": "string",
+          "description": "The UID of the user who uploaded the note."
+        },
+        "authorName": {
+          "type": "string",
+          "description": "The name of the author (denormalized)."
+        },
+        "university": {
+          "type": "string",
+          "description": "The university the note is associated with."
+        },
+        "courseCode": {
+          "type": "string",
+          "description": "The course code for the note."
+        },
+        "isPremium": {
+          "type": "boolean",
+          "description": "Whether the note is a premium resource."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the note was uploaded."
+        }
+      },
+      "required": ["title", "fileUrl", "uploadedBy"]
     }
   },
   "firestore": {
     "/users/{userId}": {
-      "schema": "users",
-      "description": "User profile document"
+      "schema": "User",
+      "description": "User profiles."
+    },
+    "/notes/{noteId}": {
+      "schema": "Note",
+      "description": "Collection of study notes."
     }
   }
 }

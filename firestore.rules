@@ -1,23 +1,43 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
     // ===============================================================
     // Assumed Data Model
     // ===============================================================
     //
     // Collection: users
-    // Document ID: userId (Firebase Auth UID)
+    // Document ID: {userId} (Firebase Auth UID)
     // Fields:
-    //   - email: string (required, email format)
-    //   - name: string (required, min 1, max 100)
-    //   - is_premium: boolean (optional, default false)
-    //   - created_at: timestamp (required)
+    //   - uid: string (required) - The user's unique identifier.
+    //   - email: string (required, email format) - The user's email address.
+    //   - displayName: string (optional) - The user's display name.
+    //   - photoURL: string (optional, uri format) - The user's profile picture URL.
+    //   - isPremium: boolean (optional) - Whether the user has a premium subscription.
+    //   - createdAt: timestamp (optional) - When the user account was created.
+    //
+    // Collection: notes
+    // Document ID: {noteId} (Auto-generated)
+    // Fields:
+    //   - id: string (optional) - The unique identifier for the note.
+    //   - title: string (required) - The title of the note.
+    //   - description: string (optional) - A brief description of the note.
+    //   - fileUrl: string (required, uri format) - The URL to the uploaded file.
+    //   - fileName: string (optional) - The original name of the file.
+    //   - fileType: string (optional) - The MIME type of the file.
+    //   - uploadedBy: string (required) - The UID of the user who uploaded the note.
+    //   - authorName: string (optional) - The name of the author (denormalized).
+    //   - university: string (optional) - The university the note is associated with.
+    //   - courseCode: string (optional) - The course code for the note.
+    //   - isPremium: boolean (optional) - Whether the note is a premium resource.
+    //   - createdAt: timestamp (optional) - When the note was uploaded.
     //
     // ===============================================================
 
     // ===============================================================
     // Helper Functions
     // ===============================================================
+    
     function isAuthenticated() {
       return request.auth != null;
     }
@@ -26,25 +46,92 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.uploadedBy;
+    }
+
     function isAdmin() {
       return isAuthenticated() &&
         (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
           (request.auth.token.email == "sb108750@gmail.com" && request.auth.token.email_verified == true));
     }
 
-    function isValidUser(data) {
-      return data.keys().hasAll(['email', 'name']) &&
-             data.email is string && data.email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$") &&
-             data.name is string && data.name.size() > 0 && data.name.size() <= 100;
+    function uidUnchanged() {
+      return !('uid' in request.resource.data) || request.resource.data.uid == request.auth.uid;
     }
+
+    function uidNotModified() {
+      return !('uid' in request.resource.data) || request.resource.data.uid == resource.data.uid;
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function validStringLength(field, minLen, maxLen) {
+      return request.resource.data[field] is string &&
+        request.resource.data[field].size() >= minLen &&
+        request.resource.data[field].size() <= maxLen;
+    }
+
+    function isValidUrl(url) {
+      return url is string && (url.matches("^https://.*") || url.matches("^http://.*"));
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return hasOnlyAllowedFields(['uid', 'email', 'displayName', 'photoURL', 'isPremium', 'createdAt', 'role']) &&
+        data.uid is string && data.uid.size() > 0 &&
+        data.email is string && isValidEmail(data.email) &&
+        (!('displayName' in data) || (data.displayName is string && data.displayName.size() < 100)) &&
+        (!('photoURL' in data) || (data.photoURL is string && isValidUrl(data.photoURL))) &&
+        (!('isPremium' in data) || data.isPremium is bool) &&
+        (!('role' in data) || data.role in ['admin', 'user']);
+    }
+
+    function isValidNote(data) {
+      return hasOnlyAllowedFields(['id', 'title', 'description', 'fileUrl', 'fileName', 'fileType', 'uploadedBy', 'authorName', 'university', 'courseCode', 'isPremium', 'createdAt']) &&
+        data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+        (!('description' in data) || (data.description is string && data.description.size() < 1000)) &&
+        data.fileUrl is string && isValidUrl(data.fileUrl) &&
+        data.uploadedBy is string && data.uploadedBy == request.auth.uid &&
+        (!('authorName' in data) || (data.authorName is string && data.authorName.size() < 100)) &&
+        (!('university' in data) || (data.university is string && data.university.size() < 200)) &&
+        (!('courseCode' in data) || (data.courseCode is string && data.courseCode.size() < 50)) &&
+        (!('isPremium' in data) || data.isPremium is bool);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
 
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
-      allow create: if isOwner(userId) && isValidUser(request.resource.data) && 
-                      (!('is_premium' in request.resource.data) || request.resource.data.is_premium == false);
-      allow update: if isOwner(userId) && isValidUser(request.resource.data) && 
-                      request.resource.data.is_premium == resource.data.is_premium;
-      allow update: if isAdmin();
+      allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == 'user' || isAdmin());
+      allow update: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == resource.data.role || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    match /notes/{noteId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidNote(request.resource.data);
+      allow update: if isAuthenticated() && (isDocOwner() || isAdmin()) && isValidNote(request.resource.data);
+      allow delete: if isAuthenticated() && (isDocOwner() || isAdmin());
+    }
+
+    match /test/connection {
+      allow read: if true;
     }
   }
 }

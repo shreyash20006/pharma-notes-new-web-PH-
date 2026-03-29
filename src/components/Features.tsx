@@ -1,48 +1,69 @@
-import { BookOpen, Brain, Zap, Send } from 'lucide-react';
+import React from 'react';
+import { ShieldCheck, Zap, Globe, HardDrive, Cpu, Database } from 'lucide-react';
 import { motion } from 'motion/react';
 
 const features = [
   {
-    icon: <BookOpen className="h-8 w-8 text-blue-600" />,
-    title: "Subject-wise Notes",
-    desc: "Comprehensive PDF notes for all B.Pharma semesters, organized by subject."
+    name: 'Archival Integrity',
+    description: 'High-resolution document scanning and archival-grade storage for long-term knowledge preservation.',
+    icon: Database,
   },
   {
-    icon: <Brain className="h-8 w-8 text-blue-600" />,
-    title: "AI Summarizer",
-    desc: "Paste your complex notes and get a simplified summary in seconds using Gemini AI."
+    name: 'Precision Search',
+    description: 'Advanced metadata indexing allows for sub-second retrieval of specific course materials.',
+    icon: HardDrive,
   },
   {
-    icon: <Zap className="h-8 w-8 text-blue-600" />,
-    title: "MCQ Generator",
-    desc: "Instantly generate practice questions from any text to test your knowledge."
-  }
+    name: 'Global Repository',
+    description: 'Access a worldwide network of student-contributed knowledge across all major disciplines.',
+    icon: Globe,
+  },
+  {
+    name: 'Verified Accuracy',
+    description: 'Community-driven verification systems ensure the highest quality of contributed materials.',
+    icon: ShieldCheck,
+  },
+  {
+    name: 'High Performance',
+    description: 'Optimized interface designed for rapid navigation and efficient study sessions.',
+    icon: Zap,
+  },
+  {
+    name: 'Neural Processing',
+    description: 'AI-enhanced document analysis for automated summarization and key concept extraction.',
+    icon: Cpu,
+  },
 ];
 
 export default function Features() {
   return (
-    <section className="py-24 bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">Why Choose PharmaNotes?</h2>
-          <p className="text-gray-500">Built specifically for the needs of Indian Pharmacy students.</p>
+    <div className="py-32 bg-surface">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8">
+        <div className="text-center mb-24">
+          <h2 className="text-sm font-label font-bold text-primary uppercase tracking-widest mb-4">Core Capabilities</h2>
+          <p className="text-5xl font-headline font-extrabold text-on-surface tracking-tight">
+            Precision Systems for <span className="text-primary">Knowledge Management</span>
+          </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {features.map((feature, i) => (
-            <motion.div 
-              key={i}
-              whileHover={{ y: -5 }}
-              className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm"
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
+          {features.map((feature, index) => (
+            <motion.div
+              key={feature.name}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.1 }}
+              className="p-8 bg-surface-container-low rounded-3xl border border-outline-variant hover:border-primary/30 transition-all group"
             >
-              <div className="bg-blue-50 w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
-                {feature.icon}
+              <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-primary group-hover:text-white transition-all duration-300">
+                <feature.icon className="w-6 h-6 text-primary group-hover:text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">{feature.title}</h3>
-              <p className="text-gray-500 leading-relaxed">{feature.desc}</p>
+              <h3 className="text-xl font-headline font-bold text-on-surface mb-3">{feature.name}</h3>
+              <p className="text-on-surface-variant font-body text-sm leading-relaxed">{feature.description}</p>
             </motion.div>
           ))}
         </div>
       </div>
-    </section>
+    </div>
   );
 }

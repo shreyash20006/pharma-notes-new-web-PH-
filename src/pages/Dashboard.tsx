@@ -1,115 +1,306 @@
-import { useAuth } from '../hooks/useAuth';
-import { User, Mail, ShieldCheck, Clock, BookOpen, Send, LogOut, Loader2 } from 'lucide-react';
-import { logout } from '../lib/firebase';
-import { Link, Navigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useFirebase } from '../context/FirebaseContext';
+import { logout, db, OperationType, handleFirestoreError } from '../lib/firebase';
+import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { 
+  LayoutDashboard, 
+  FileText, 
+  BarChart3, 
+  Settings, 
+  LogOut, 
+  Plus, 
+  Search,
+  Bell,
+  ChevronRight,
+  Clock,
+  Download,
+  Eye,
+  Loader2,
+  ShieldCheck
+} from 'lucide-react';
+import { motion } from 'motion/react';
 
 export default function Dashboard() {
-  const { user, profile, loading } = useAuth();
+  const { user, userProfile, loading, isAuthReady } = useFirebase();
+  const navigate = useNavigate();
+  const [recentNotes, setRecentNotes] = useState<any[]>([]);
+  const [fetchingNotes, setFetchingNotes] = useState(false);
 
-  if (loading) {
+  useEffect(() => {
+    if (isAuthReady && !user) {
+      navigate('/auth');
+    }
+  }, [isAuthReady, user, navigate]);
+
+  useEffect(() => {
+    const fetchRecentNotes = async () => {
+      if (!user) return;
+      setFetchingNotes(true);
+      try {
+        const q = query(
+          collection(db, 'notes'),
+          where('uploadedBy', '==', user.uid),
+          orderBy('createdAt', 'desc'),
+          limit(5)
+        );
+        const snapshot = await getDocs(q);
+        const notes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setRecentNotes(notes);
+      } catch (error) {
+        console.error("Error fetching recent notes:", error);
+      } finally {
+        setFetchingNotes(false);
+      }
+    };
+
+    if (user) {
+      fetchRecentNotes();
+    }
+  }, [user]);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+  };
+
+  if (loading || !isAuthReady) {
     return (
-      <div className="flex flex-col items-center justify-center py-32 text-gray-400">
-        <Loader2 className="h-10 w-10 animate-spin mb-4" />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-surface text-on-surface-variant">
+        <Loader2 className="h-12 w-12 animate-spin mb-4 text-primary" />
         <p className="font-medium">Loading your profile...</p>
       </div>
     );
   }
 
-  if (!user) {
-    return <Navigate to="/" />;
-  }
+  if (!user) return null;
+
+  const userName = userProfile?.displayName || user.displayName || user.email?.split('@')[0] || 'User';
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Profile Sidebar */}
-        <div className="lg:col-span-1 space-y-6">
-          <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm text-center">
-            <div className="relative inline-block mb-6">
-              <div className="h-24 w-24 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-3xl font-bold border-4 border-white shadow-lg">
-                {user.displayName?.[0] || 'U'}
-              </div>
-              {profile?.is_premium && (
-                <div className="absolute -bottom-1 -right-1 bg-amber-400 text-white p-1.5 rounded-full border-2 border-white" title="Premium Member">
-                  <ShieldCheck className="h-4 w-4" />
-                </div>
-              )}
+    <div className="min-h-screen bg-surface flex">
+      {/* Sidebar */}
+      <aside className="w-64 bg-surface-container-lowest border-r border-outline-variant hidden md:flex flex-col">
+        <div className="p-6">
+          <Link to="/" className="flex items-center gap-2 text-primary">
+            <div className="bg-primary p-2 rounded-xl">
+              <LayoutDashboard className="w-6 h-6 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-1">{user.displayName}</h2>
-            <p className="text-gray-500 text-sm mb-6 flex items-center justify-center gap-1.5">
-              <Mail className="h-4 w-4" />
-              {user.email}
-            </p>
-            
-            <div className="flex flex-col gap-3">
-              {profile?.is_premium ? (
-                <div className="bg-amber-50 text-amber-700 px-4 py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2">
-                  <ShieldCheck className="h-5 w-5" />
-                  Premium Active
-                </div>
-              ) : (
-                <Link 
-                  to="/premium" 
-                  className="bg-blue-600 text-white px-4 py-3 rounded-2xl text-sm font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-100"
-                >
-                  Upgrade to Premium
-                </Link>
-              )}
-              <button 
-                onClick={logout}
-                className="flex items-center justify-center gap-2 text-gray-500 hover:text-red-600 font-bold text-sm py-2 transition-colors"
-              >
-                <LogOut className="h-4 w-4" />
-                Logout
-              </button>
-            </div>
+            <span className="font-headline font-bold text-xl tracking-tight">NotesDrive</span>
+          </Link>
+        </div>
+
+        <nav className="flex-1 px-4 space-y-1">
+          <SidebarLink icon={<LayoutDashboard className="w-5 h-5" />} label="Dashboard" active />
+          <SidebarLink icon={<FileText className="w-5 h-5" />} label="My Notes" />
+          <SidebarLink icon={<BarChart3 className="w-5 h-5" />} label="Analytics" />
+          <SidebarLink icon={<Settings className="w-5 h-5" />} label="Settings" />
+        </nav>
+
+        <div className="p-4 border-t border-outline-variant">
+          <button 
+            onClick={handleLogout}
+            className="flex items-center gap-3 w-full px-4 py-3 text-on-surface-variant hover:bg-surface-container-low hover:text-primary rounded-xl transition-colors font-medium"
+          >
+            <LogOut className="w-5 h-5" />
+            <span>Logout</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col">
+        {/* Topbar */}
+        <header className="h-20 bg-surface-container-lowest border-b border-outline-variant flex items-center justify-between px-8">
+          <div className="flex-1 max-w-xl relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-outline w-5 h-5" />
+            <input 
+              type="text" 
+              placeholder="Search your notes, categories..."
+              className="w-full pl-12 pr-4 py-2.5 bg-surface-container-low border-none rounded-2xl focus:ring-2 focus:ring-primary/20 transition-all outline-none text-on-surface"
+            />
           </div>
 
-          <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-6">Quick Links</h3>
-            <div className="space-y-3">
-              <Link to="/notes" className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 text-gray-600 font-medium transition-colors">
-                <BookOpen className="h-5 w-5 text-blue-600" />
-                My Notes
-              </Link>
-              <a href="https://t.me/your_channel" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 text-gray-600 font-medium transition-colors">
-                <Send className="h-5 w-5 text-blue-600" />
-                Telegram Channel
-              </a>
+          <div className="flex items-center gap-6">
+            <button className="relative p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors">
+              <Bell className="w-6 h-6" />
+              <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-error rounded-full border-2 border-surface-container-lowest"></span>
+            </button>
+            
+            <div className="flex items-center gap-3 pl-6 border-l border-outline-variant">
+              <div className="text-right hidden sm:block">
+                <p className="text-sm font-bold text-on-surface">{userName}</p>
+                <p className="text-xs text-on-surface-variant">{userProfile?.isPremium ? 'Premium Member' : 'Free Member'}</p>
+              </div>
+              <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-primary font-bold overflow-hidden">
+                {user.photoURL ? (
+                  <img src={user.photoURL} alt={userName} className="h-full w-full object-cover" />
+                ) : (
+                  userName[0].toUpperCase()
+                )}
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Dashboard Content */}
+        <div className="flex-1 p-8 overflow-y-auto">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-3xl font-headline font-bold text-on-surface">Welcome back, {userName}!</h1>
+              <p className="text-on-surface-variant mt-1">Here's what's happening with your notes today.</p>
+            </div>
+            <button 
+              onClick={() => navigate('/upload')}
+              className="bg-primary text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:shadow-lg hover:shadow-primary/20 transition-all transform hover:-translate-y-0.5"
+            >
+              <Plus className="w-5 h-5" />
+              <span>Quick Upload</span>
+            </button>
+          </div>
+
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <StatCard label="Total Notes" value={recentNotes.length.toString()} trend="+0%" icon={<FileText className="text-primary" />} />
+            <StatCard label="Total Views" value="0" trend="+0%" icon={<Eye className="text-primary" />} />
+            <StatCard label="Downloads" value="0" trend="+0%" icon={<Download className="text-primary" />} />
+            <StatCard label="Earnings" value="₹0" trend="+0%" icon={<BarChart3 className="text-primary" />} />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Recent Activity */}
+            <div className="lg:col-span-2 bg-surface-container-lowest rounded-3xl border border-outline-variant p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-headline font-bold text-on-surface">Recent Notes</h2>
+                <button className="text-primary font-bold text-sm flex items-center gap-1 hover:underline">
+                  View All <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                {fetchingNotes ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : recentNotes.length > 0 ? (
+                  recentNotes.map(note => (
+                    <NoteItem 
+                      key={note.id}
+                      title={note.title} 
+                      category={note.university || 'General'} 
+                      date={note.createdAt?.toDate ? new Date(note.createdAt.toDate()).toLocaleDateString() : 'Just now'} 
+                      views={0} 
+                    />
+                  ))
+                ) : (
+                  <div className="text-center py-12 bg-surface-container-low rounded-2xl border border-dashed border-outline-variant">
+                    <FileText className="w-12 h-12 text-outline mx-auto mb-4" />
+                    <p className="text-on-surface-variant font-medium">No notes uploaded yet.</p>
+                    <button 
+                      onClick={() => navigate('/upload')}
+                      className="text-primary font-bold mt-2 hover:underline"
+                    >
+                      Upload your first note
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Quick Actions / Categories */}
+            <div className="space-y-6">
+              {!userProfile?.isPremium && (
+                <div className="bg-primary-container rounded-3xl p-6 text-on-primary-container">
+                  <h3 className="font-headline font-bold text-lg mb-2 flex items-center gap-2">
+                    <ShieldCheck className="w-5 h-5" /> Upgrade to Pro
+                  </h3>
+                  <p className="text-sm opacity-90 mb-4">Get unlimited uploads, advanced analytics and custom branding.</p>
+                  <button 
+                    onClick={() => navigate('/premium')}
+                    className="w-full py-3 bg-white text-primary rounded-2xl font-bold hover:bg-opacity-90 transition-all"
+                  >
+                    Upgrade Now
+                  </button>
+                </div>
+              )}
+
+              <div className="bg-surface-container-lowest rounded-3xl border border-outline-variant p-6">
+                <h3 className="font-headline font-bold text-lg mb-4 text-on-surface">Popular Categories</h3>
+                <div className="flex flex-wrap gap-2">
+                  <CategoryTag label="Pharmacy" count={0} />
+                  <CategoryTag label="Medicine" count={0} />
+                  <CategoryTag label="Biology" count={0} />
+                  <CategoryTag label="Chemistry" count={0} />
+                  <CategoryTag label="Physics" count={0} />
+                </div>
+              </div>
             </div>
           </div>
         </div>
+      </main>
+    </div>
+  );
+}
 
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-8">
-          <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">Recent Activity</h2>
-            <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-              <Clock className="h-10 w-10 opacity-20 mb-4" />
-              <p className="font-medium">No recent activity found.</p>
-              <p className="text-xs mt-2">Start studying by browsing our notes collection.</p>
-              <Link to="/notes" className="mt-6 text-blue-600 font-bold text-sm hover:underline">Browse Notes</Link>
-            </div>
-          </div>
+function SidebarLink({ icon, label, active = false }: { icon: React.ReactNode, label: string, active?: boolean }) {
+  return (
+    <button className={`
+      flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all font-medium
+      ${active 
+        ? 'bg-primary text-white shadow-lg shadow-primary/20' 
+        : 'text-on-surface-variant hover:bg-surface-container-low hover:text-primary'}
+    `}>
+      {icon}
+      <span>{label}</span>
+    </button>
+  );
+}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-8 rounded-3xl text-white shadow-lg shadow-blue-100">
-              <h3 className="text-lg font-bold mb-2">Free Resources</h3>
-              <p className="text-blue-100 text-sm mb-6">Access our collection of free B.Pharma notes and AI tools.</p>
-              <Link to="/notes" className="inline-block bg-white/20 hover:bg-white/30 px-4 py-2 rounded-xl text-sm font-bold transition-all">
-                Explore Now
-              </Link>
-            </div>
-            <div className="bg-gradient-to-br from-amber-500 to-amber-600 p-8 rounded-3xl text-white shadow-lg shadow-amber-100">
-              <h3 className="text-lg font-bold mb-2">Premium Content</h3>
-              <p className="text-amber-100 text-sm mb-6">Unlock exclusive notes and advanced AI features.</p>
-              <Link to="/premium" className="inline-block bg-white/20 hover:bg-white/30 px-4 py-2 rounded-xl text-sm font-bold transition-all">
-                Learn More
-              </Link>
-            </div>
+function StatCard({ label, value, trend, icon }: { label: string, value: string, trend: string, icon: React.ReactNode }) {
+  return (
+    <div className="bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant hover:border-primary/30 transition-all group">
+      <div className="flex items-center justify-between mb-4">
+        <div className="p-2.5 bg-surface-container-low rounded-xl group-hover:bg-primary/10 transition-colors">
+          {icon}
+        </div>
+        <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">{trend}</span>
+      </div>
+      <p className="text-on-surface-variant text-sm font-medium">{label}</p>
+      <p className="text-2xl font-headline font-bold text-on-surface mt-1">{value}</p>
+    </div>
+  );
+}
+
+function NoteItem({ title, category, date, views }: { title: string, category: string, date: string, views: number }) {
+  return (
+    <div className="flex items-center justify-between p-4 hover:bg-surface-container-low rounded-2xl transition-all cursor-pointer group">
+      <div className="flex items-center gap-4">
+        <div className="w-12 h-12 bg-surface-container-high rounded-xl flex items-center justify-center text-primary">
+          <FileText className="w-6 h-6" />
+        </div>
+        <div>
+          <h4 className="font-bold text-on-surface group-hover:text-primary transition-colors">{title}</h4>
+          <div className="flex items-center gap-3 mt-1">
+            <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-md">{category}</span>
+            <span className="flex items-center gap-1 text-xs text-on-surface-variant">
+              <Clock className="w-3 h-3" /> {date}
+            </span>
           </div>
         </div>
       </div>
+      <div className="text-right">
+        <p className="text-sm font-bold text-on-surface">{views}</p>
+        <p className="text-xs text-on-surface-variant">views</p>
+      </div>
     </div>
+  );
+}
+
+function CategoryTag({ label, count }: { label: string, count: number }) {
+  return (
+    <button className="px-3 py-1.5 bg-surface-container-low hover:bg-primary hover:text-white rounded-xl text-sm font-medium text-on-surface-variant transition-all flex items-center gap-2">
+      <span>{label}</span>
+      <span className="opacity-60 text-xs">{count}</span>
+    </button>
   );
 }
