@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useFirebase } from '../context/FirebaseContext';
 import { db } from '../lib/firebase';
-import { collection, addDoc, getDocs, deleteDoc, doc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp, query } from 'firebase/firestore';
 import { motion } from 'motion/react';
-import { Plus, Trash2, BookOpen, Shield, Upload, Eye, Download, Search, Filter } from 'lucide-react';
-import { Navigate } from 'react-router-dom';
+import { Plus, Trash2, BookOpen, Shield, Eye, Search, Check, X, Clock } from 'lucide-react';
+import { Navigate, Link } from 'react-router-dom';
 
 interface Note {
   id: string;
@@ -18,9 +18,11 @@ interface Note {
   isPremium: boolean;
   uploadedBy: string;
   uploaderName: string;
+  uploaderEmail?: string;
   createdAt: any;
   views: number;
   downloads: number;
+  status?: string;
 }
 
 const CATEGORIES = [
@@ -29,18 +31,19 @@ const CATEGORIES = [
   { id: 'diploma', name: 'Diploma', branches: ['CSE', 'ME', 'EE', 'Civil'] },
 ];
 
-const UNIVERSITIES = ['RTMNU', 'DBATU', 'Other'];
+const UNIVERSITIES = ['RTMNU', 'DBATU', 'SPPU', 'Other'];
 const SEMESTERS = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'];
 
 export default function Admin() {
   const { user, isAdmin, loading } = useFirebase();
   const [notes, setNotes] = useState<Note[]>([]);
+  const [pendingNotes, setPendingNotes] = useState<Note[]>([]);
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'all' | 'pending'>('all');
   
-  // Form state
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -60,13 +63,19 @@ export default function Admin() {
 
   const fetchNotes = async () => {
     try {
-      const q = query(collection(db, 'notes'), orderBy('createdAt', 'desc'));
+      const q = query(collection(db, 'notes'));
       const snapshot = await getDocs(q);
       const notesData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Note[];
-      setNotes(notesData);
+      
+      // Separate approved and pending
+      const approved = notesData.filter(n => n.status === 'approved' || !n.status);
+      const pending = notesData.filter(n => n.status === 'pending');
+      
+      setNotes(approved);
+      setPendingNotes(pending);
     } catch (error) {
       console.error('Error fetching notes:', error);
     }
@@ -86,10 +95,11 @@ export default function Admin() {
         ...form,
         uploadedBy: user?.uid,
         uploaderName: user?.displayName || user?.email,
+        uploaderEmail: user?.email,
         createdAt: serverTimestamp(),
         views: 0,
         downloads: 0,
-        status: 'approved', // Admin uploads are auto-approved
+        status: 'approved',
       });
 
       setForm({
@@ -111,6 +121,27 @@ export default function Admin() {
     setSaving(false);
   };
 
+  const handleApprove = async (noteId: string) => {
+    try {
+      await updateDoc(doc(db, 'notes', noteId), {
+        status: 'approved'
+      });
+      fetchNotes();
+    } catch (error) {
+      console.error('Error approving note:', error);
+    }
+  };
+
+  const handleReject = async (noteId: string) => {
+    if (!confirm('Reject and delete this note?')) return;
+    try {
+      await deleteDoc(doc(db, 'notes', noteId));
+      fetchNotes();
+    } catch (error) {
+      console.error('Error rejecting note:', error);
+    }
+  };
+
   const handleDelete = async (noteId: string) => {
     if (!confirm('Are you sure you want to delete this note?')) return;
     
@@ -122,7 +153,6 @@ export default function Admin() {
     }
   };
 
-  // Redirect non-admin users
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-900">
@@ -142,14 +172,17 @@ export default function Admin() {
           <h1 className="text-2xl font-bold text-white mb-4">Access Denied</h1>
           <p className="text-gray-400 mb-4">You don't have admin access.</p>
           <p className="text-gray-500 text-sm">Logged in as: {user.email}</p>
+          <Link to="/dashboard" className="mt-4 inline-block text-purple-400 hover:underline">
+            Go to Dashboard
+          </Link>
         </div>
       </div>
     );
   }
 
-  const filteredNotes = notes.filter(note => 
-    note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    note.category.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredNotes = (activeTab === 'pending' ? pendingNotes : notes).filter(note => 
+    note.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    note.category?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const selectedCategory = CATEGORIES.find(c => c.id === form.category);
@@ -315,6 +348,31 @@ export default function Admin() {
           </motion.div>
         )}
 
+        {/* Tabs */}
+        <div className="flex gap-4 mb-6">
+          <button
+            onClick={() => setActiveTab('all')}
+            className={`px-6 py-3 rounded-xl font-bold transition-all ${
+              activeTab === 'all' 
+                ? 'bg-purple-500 text-white' 
+                : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+            }`}
+          >
+            All Notes ({notes.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('pending')}
+            className={`px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 ${
+              activeTab === 'pending' 
+                ? 'bg-orange-500 text-white' 
+                : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+            }`}
+          >
+            <Clock className="w-4 h-4" />
+            Pending Approval ({pendingNotes.length})
+          </button>
+        </div>
+
         {/* Search */}
         <div className="relative mb-6">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -334,12 +392,12 @@ export default function Admin() {
             <p className="text-2xl font-bold text-white">{notes.length}</p>
           </div>
           <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
-            <p className="text-gray-400 text-sm">Premium Notes</p>
-            <p className="text-2xl font-bold text-purple-400">{notes.filter(n => n.isPremium).length}</p>
+            <p className="text-gray-400 text-sm">Pending</p>
+            <p className="text-2xl font-bold text-orange-400">{pendingNotes.length}</p>
           </div>
           <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
-            <p className="text-gray-400 text-sm">Total Views</p>
-            <p className="text-2xl font-bold text-blue-400">{notes.reduce((acc, n) => acc + (n.views || 0), 0)}</p>
+            <p className="text-gray-400 text-sm">Premium Notes</p>
+            <p className="text-2xl font-bold text-purple-400">{notes.filter(n => n.isPremium).length}</p>
           </div>
           <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
             <p className="text-gray-400 text-sm">Total Downloads</p>
@@ -349,57 +407,84 @@ export default function Admin() {
 
         {/* Notes List */}
         <div className="bg-gray-800 rounded-2xl border border-gray-700 overflow-hidden">
-          <div className="grid grid-cols-12 gap-4 p-4 bg-gray-700/50 text-gray-400 text-sm font-medium">
-            <div className="col-span-5">Title</div>
-            <div className="col-span-2">Category</div>
-            <div className="col-span-2">University</div>
-            <div className="col-span-1">Type</div>
-            <div className="col-span-2">Actions</div>
-          </div>
+          {activeTab === 'pending' && pendingNotes.length > 0 && (
+            <div className="p-4 bg-orange-500/10 border-b border-orange-500/30">
+              <p className="text-orange-400 text-sm font-medium">
+                These notes are waiting for your approval. Click ✓ to approve or ✕ to reject.
+              </p>
+            </div>
+          )}
 
           {filteredNotes.length === 0 ? (
             <div className="p-12 text-center">
               <BookOpen className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-              <p className="text-gray-400">No notes found. Add your first note!</p>
+              <p className="text-gray-400">
+                {activeTab === 'pending' ? 'No pending notes to approve.' : 'No notes found. Add your first note!'}
+              </p>
             </div>
           ) : (
-            filteredNotes.map((note) => (
-              <div key={note.id} className="grid grid-cols-12 gap-4 p-4 border-t border-gray-700 items-center hover:bg-gray-700/30">
-                <div className="col-span-5">
-                  <p className="text-white font-medium truncate">{note.title}</p>
-                  <p className="text-gray-500 text-xs">{note.branch} - {note.semester} Sem</p>
+            <div className="divide-y divide-gray-700">
+              {filteredNotes.map((note) => (
+                <div key={note.id} className="p-4 hover:bg-gray-700/30 transition-all">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-white font-medium truncate">{note.title}</h3>
+                      <p className="text-gray-500 text-sm">
+                        {note.branch} - {note.semester} Sem • {note.university} • 
+                        <span className="text-gray-400"> by {note.uploaderName || note.uploaderEmail || 'Unknown'}</span>
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-400 text-xs uppercase">{note.category}</span>
+                      {note.isPremium ? (
+                        <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full">Premium</span>
+                      ) : (
+                        <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full">Free</span>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      {activeTab === 'pending' ? (
+                        <>
+                          <button
+                            onClick={() => handleApprove(note.id)}
+                            className="p-2 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30"
+                            title="Approve"
+                          >
+                            <Check className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => handleReject(note.id)}
+                            className="p-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30"
+                            title="Reject"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <a
+                            href={note.driveLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30"
+                            title="View"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </a>
+                          <button
+                            onClick={() => handleDelete(note.id)}
+                            className="p-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div className="col-span-2">
-                  <span className="text-gray-300 text-sm">{note.category.toUpperCase()}</span>
-                </div>
-                <div className="col-span-2">
-                  <span className="text-gray-300 text-sm">{note.university}</span>
-                </div>
-                <div className="col-span-1">
-                  {note.isPremium ? (
-                    <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full">Premium</span>
-                  ) : (
-                    <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full">Free</span>
-                  )}
-                </div>
-                <div className="col-span-2 flex gap-2">
-                  <a
-                    href={note.driveLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-2 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </a>
-                  <button
-                    onClick={() => handleDelete(note.id)}
-                    className="p-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))
+              ))}
+            </div>
           )}
         </div>
       </div>
