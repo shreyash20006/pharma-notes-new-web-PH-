@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useFirebase } from '../context/FirebaseContext';
-import { db, OperationType, handleFirestoreError } from '../lib/firebase';
+import { db } from '../lib/firebase';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { ShieldCheck, CheckCircle2, Zap, Loader2, AlertCircle, Star, Crown, Rocket, CreditCard } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -73,22 +73,23 @@ export default function Premium() {
             const verifyData = await verifyResponse.json();
 
             if (verifyData.success) {
-              // 4. Update user status in Firestore
-              try {
-                await updateDoc(doc(db, 'users', user!.uid), {
-                  isPremium: true,
-                  premiumSince: serverTimestamp()
-                });
-                window.location.href = '/dashboard?success=true';
-              } catch (dbErr) {
-                handleFirestoreError(dbErr, OperationType.UPDATE, `users/${user!.uid}`);
-              }
-            } else {
-              setError(verifyData.error || 'Payment verification failed.');
-            }
-          } catch (verifyErr) {
-            console.error('Verification error:', verifyErr);
-            setError('Failed to verify payment. Please contact support.');
+  // 4. Update user status in Firestore
+  try {
+    await updateDoc(doc(db, 'users', user!.uid), {
+      isPremium: true,
+      premiumSince: serverTimestamp()
+    });
+
+    window.location.href = '/dashboard?success=true';
+
+  } catch (dbErr) {
+    console.error("Firestore error:", dbErr);
+  }
+
+} else {
+  setError(verifyData.error || 'Payment verification failed.');
+}
+            
           }
         },
         onDismiss: () => {
