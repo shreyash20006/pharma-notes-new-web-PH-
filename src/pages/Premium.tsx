@@ -73,22 +73,20 @@ export default function Premium() {
             const verifyData = await verifyResponse.json();
 
             if (verifyData.success) {
-  // 4. Update user status in Firestore
-  try {
-    await updateDoc(doc(db, 'users', user!.uid), {
-      isPremium: true,
-      premiumSince: serverTimestamp()
-    });
-
-    window.location.href = '/dashboard?success=true';
-
-  } catch (dbErr) {
-    console.error("Firestore error:", dbErr);
-  }
-
-} else {
-  setError(verifyData.error || 'Payment verification failed.');
-}
+              // 4. Update user status in Firestore
+              try {
+                await updateDoc(doc(db, 'users', user!.uid), {
+                  isPremium: true,
+                  premiumSince: serverTimestamp()
+                });
+                window.location.href = '/dashboard?success=true';
+              } catch (dbErr) {
+                console.error("Firestore error:", dbErr);
+                setError('Payment successful but profile update failed. Please contact support.');
+              }
+            } else {
+              setError(verifyData.error || 'Payment verification failed.');
+            }
           } catch (handlerErr) {
             console.error("Payment handler error:", handlerErr);
             setError('Payment processing error. Please contact support.');
