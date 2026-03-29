@@ -2,7 +2,9 @@
   "apiKey": "AIzaSyCXPP1bsJiUprhaI5_BusF-R_pFFWReMgw",
   "authDomain": "notesdrive-925f6.firebaseapp.com",
   "projectId": "notesdrive-925f6",
-  "storageBucket": "notesdrive-925f6.appspot.com",
+  "storageBucket": "notesdrive-925f6.firebasestorage.app",
   "messagingSenderId": "314698842551",
-  "appId": "1:314698842551:web:bc1119b2b2bd70239da832"
+  "appId": "1:314698842551:web:bc1119b2b2bd70239da832",
+  "measurementId": "G-V1TLTEZD8K",
+  "firestoreDatabaseId": "(default)"
 }

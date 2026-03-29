@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
-import { db, storage, OperationType, handleFirestoreError } from '../lib/firebase';
+import { db, OperationType, handleFirestoreError } from '../lib/firebase';
+import { supabase } from '../lib/supabase';
 import { useFirebase } from '../context/FirebaseContext';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { 
   Upload as UploadIcon, 
@@ -81,57 +81,55 @@ export default function Upload() {
     setUploadProgress(0);
 
     try {
-      // 1. Upload file to Firebase Storage
+      // 1. Upload file to Supabase Storage
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const storageRef = ref(storage, `notes/${user.uid}/${fileName}`);
+      const filePath = `notes/${user.uid}/${fileName}`;
       
-      const uploadTask = uploadBytesResumable(storageRef, file);
+      const { data, error: uploadError } = await supabase.storage
+        .from('notes')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
-      uploadTask.on('state_changed', 
-        (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          setUploadProgress(Math.round(progress));
-        }, 
-        (err) => {
-          console.error('Upload error:', err);
-          setError(err.message || 'Failed to upload file.');
-          setUploading(false);
-        }, 
-        async () => {
-          // Upload completed successfully, now get the download URL
-          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-          
-          try {
-            // 2. Save metadata to Firestore
-            await addDoc(collection(db, 'notes'), {
-              title,
-              description,
-              fileUrl: downloadURL,
-              uploadedBy: user.uid,
-              category,
-              price: parseFloat(price) || 0,
-              university,
-              courseCode,
-              createdAt: serverTimestamp(),
-              status: 'published',
-              views: 0,
-              downloads: 0
-            });
+      if (uploadError) {
+        throw uploadError;
+      }
 
-            setSuccess(true);
-            setUploading(false);
-            setFile(null);
-            setTitle('');
-            setDescription('');
-            setPrice('');
-            setUniversity('');
-            setCourseCode('');
-          } catch (dbErr) {
-            handleFirestoreError(dbErr, OperationType.CREATE, 'notes');
-          }
-        }
-      );
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('notes')
+        .getPublicUrl(filePath);
+
+      // 2. Save metadata to Firestore
+      try {
+        await addDoc(collection(db, 'notes'), {
+          title,
+          description,
+          fileUrl: publicUrl,
+          uploadedBy: user.uid,
+          category,
+          price: parseFloat(price) || 0,
+          university,
+          courseCode,
+          createdAt: serverTimestamp(),
+          status: 'published',
+          views: 0,
+          downloads: 0
+        });
+
+        setSuccess(true);
+        setUploading(false);
+        setFile(null);
+        setTitle('');
+        setDescription('');
+        setPrice('');
+        setUniversity('');
+        setCourseCode('');
+      } catch (dbErr) {
+        handleFirestoreError(dbErr, OperationType.CREATE, 'notes');
+      }
 
     } catch (err: any) {
       console.error('Overall error:', err);

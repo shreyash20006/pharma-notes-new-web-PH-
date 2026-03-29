@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useFirebase } from '../context/FirebaseContext';
 import { logout, db, OperationType, handleFirestoreError } from '../lib/firebase';
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, limit, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { 
   LayoutDashboard, 
   FileText, 
@@ -17,21 +17,55 @@ import {
   Download,
   Eye,
   Loader2,
-  ShieldCheck
+  ShieldCheck,
+  CheckCircle2
 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 
 export default function Dashboard() {
   const { user, userProfile, loading, isAuthReady } = useFirebase();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [recentNotes, setRecentNotes] = useState<any[]>([]);
   const [fetchingNotes, setFetchingNotes] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
 
   useEffect(() => {
     if (isAuthReady && !user) {
       navigate('/auth');
     }
   }, [isAuthReady, user, navigate]);
+
+  useEffect(() => {
+    const orderId = searchParams.get('order_id');
+    const success = searchParams.get('success');
+
+    if (success === 'true') {
+      setPaymentSuccess(true);
+      setTimeout(() => setPaymentSuccess(false), 5000);
+    }
+
+    if (orderId && user && !userProfile?.isPremium) {
+      const verifyPayment = async () => {
+        try {
+          const response = await fetch(`/api/cashfree/verify/${orderId}`);
+          const data = await response.json();
+          
+          if (data.order_status === 'PAID') {
+            await updateDoc(doc(db, 'users', user.uid), {
+              isPremium: true,
+              premiumSince: serverTimestamp()
+            });
+            setPaymentSuccess(true);
+            setTimeout(() => setPaymentSuccess(false), 5000);
+          }
+        } catch (error) {
+          console.error("Error verifying Cashfree payment:", error);
+        }
+      };
+      verifyPayment();
+    }
+  }, [searchParams, user, userProfile]);
 
   useEffect(() => {
     const fetchRecentNotes = async () => {
@@ -158,6 +192,20 @@ export default function Dashboard() {
               <span>Quick Upload</span>
             </button>
           </div>
+
+          <AnimatePresence>
+            {paymentSuccess && (
+              <motion.div 
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="mb-8 p-4 bg-emerald-500 text-white rounded-2xl flex items-center gap-3 shadow-lg shadow-emerald-500/20"
+              >
+                <CheckCircle2 className="w-6 h-6" />
+                <span className="font-bold">Payment Successful! Your account has been upgraded to Premium.</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
