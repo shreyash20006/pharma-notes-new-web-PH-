@@ -1,10 +1,16 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { signInWithGoogle, handleRedirectResult, logout, auth } from '../lib/firebase';
+import { 
+  signInWithGoogle, 
+  handleRedirectResult, 
+  logout, 
+  auth,
+  onAuthStateChange,
+  isUserAuthenticated 
+} from '../lib/firebase';
 import { motion, AnimatePresence } from 'motion/react';
 import { Mail, Lock, User, Loader2, AlertCircle, CheckCircle2, Chrome } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { onAuthStateChanged } from 'firebase/auth';
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -17,37 +23,92 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
 
-  // Handle Firebase redirect result on page load
+  // Check auth state and handle Firebase redirect result on component mount
   useEffect(() => {
-    const handleGoogleRedirect = async () => {
+    const handleAuthFlow = async () => {
       try {
-        console.log('Auth page loaded, checking for Google redirect result...');
+        // Check if user is already authenticated
+        if (isUserAuthenticated()) {
+          console.log('User already authenticated, redirecting to dashboard');
+          navigate('/dashboard');
+          return;
+        }
+
+        // Check for redirect result from Google Sign-In
+        console.log('Checking for Google redirect result...');
         const result = await handleRedirectResult();
         
         if (result && result.user) {
-          console.log('Google Sign-In successful, redirecting to dashboard:', result.user.email);
-          // Wait a moment for session to be established
+          console.log('✓ Successfully logged in with Google:', result.user.email);
+          // Give Firebase time to establish session
           await new Promise(resolve => setTimeout(resolve, 500));
           navigate('/dashboard');
         }
       } catch (err: any) {
-        console.error('Error handling Google redirect:', err);
+        console.error('Error during auth flow:', err);
         
-        // Handle specific error codes
-        if (err.code === 'auth/account-exists-with-different-credential') {
-          setError('An account already exists with this email address. Please sign in with your original method.');
-        } else if (err.code === 'auth/auth-domain-config-required') {
-          setError('Firebase auth domain is not configured. Please contact support.');
-        } else if (err.code === 'auth/operation-not-supported-in-this-environment') {
-          setError('Sign-in is not supported in this environment.');
-        } else if (err.code !== 'auth/popup-closed-by-user') {
-          // Only show error if it's not just a user closing a popup
-          setError(err.message || 'An error occurred during sign-in.');
+        // Map Firebase error codes to user-friendly messages
+        let userMessage = 'An error occurred during sign-in. Please try again.';
+        
+        switch (err.code) {
+          case 'auth/unauthorized-domain':
+            userMessage = 'This domain is not authorized for Google Sign-In. Please contact support.';
+            console.error(
+              '🚨 DOMAIN NOT AUTHORIZED\n' +
+              'This typically means your domain (notesdrive.shop) is not whitelisted in Firebase Console.\n' +
+              'Solution: Ask admin to add https://www.notesdrive.shop and http://localhost:3000 to:\n' +
+              'Firebase Console > Authentication > Settings > Authorized JavaScript origins & Redirect URIs'
+            );
+            break;
+          
+          case 'auth/account-exists-with-different-credential':
+            userMessage = 'An account with this email already exists. Please sign in with your original method.';
+            break;
+          
+          case 'auth/auth-domain-config-required':
+            userMessage = 'Firebase domain configuration is incomplete. Please contact support.';
+            break;
+          
+          case 'auth/operation-not-supported-in-this-environment':
+            userMessage = 'Sign-in is not supported in this browser. Please try a different browser.';
+            break;
+          
+          case 'auth/network-request-failed':
+            userMessage = 'Network error. Please check your internet connection.';
+            break;
+          
+          case 'auth/popup-closed-by-user':
+            // User just closed the popup, don't show an error
+            console.log('User closed Google Sign-In');
+            return;
+          
+          default:
+            userMessage = err.message || 'An unexpected error occurred.';
         }
+        
+        setError(userMessage);
       }
     };
 
-    handleGoogleRedirect();
+    handleAuthFlow();
+  }, [navigate]);
+
+  // Listen to Firebase auth state changes
+  useEffect(() => {
+    console.log('Setting up auth state listener...');
+    const unsubscribe = onAuthStateChange((user) => {
+      if (user) {
+        console.log('Auth state: User is signed in -', user.email);
+        // Auto-redirect if user gets signed in
+        navigate('/dashboard');
+      } else {
+        console.log('Auth state: User is signed out');
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, [navigate]);
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -57,14 +118,18 @@ export default function Auth() {
 
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
+        // Email/Password Login
+        const { error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
-        if (error) throw error;
+        if (signInError) throw signInError;
+        
+        console.log('✓ Successfully logged in with email/password');
         navigate('/dashboard');
       } else {
-        const { error } = await supabase.auth.signUp({
+        // Email/Password Signup
+        const { error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -73,11 +138,14 @@ export default function Auth() {
             },
           },
         });
-        if (error) throw error;
+        if (signUpError) throw signUpError;
+        
+        console.log('✓ Account created successfully. Please check your email to verify.');
         setSuccess(true);
       }
     } catch (err: any) {
-      setError(err.message);
+      console.error('Auth error:', err);
+      setError(err.message || 'An error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -89,31 +157,47 @@ export default function Auth() {
 
     try {
       console.log('User clicked "Continue with Google"');
-      // This will redirect to Google, then back to this page
-      // The useEffect hook will handle the result
+      
+      // Initiate redirect to Google
+      // Note: This will redirect the page, so code after this may not execute
       await signInWithGoogle();
       
-      // Note: We won't reach here if redirect is successful
-      // This is expected behavior for signInWithRedirect
-      console.log('Google Sign-In redirect initiated');
+      // If we get here, redirect was initiated but not yet completed
+      console.log('✓ Redirected to Google Sign-In');
+      // The page will redirect, so this is just for logging
     } catch (err: any) {
-      console.error('Google Sign-In Error:', err);
+      // Handle errors that occur during redirect initiation
+      console.error('Google Sign-In Error:', {
+        code: err.code,
+        message: err.message,
+      });
+      
       setLoading(false);
       
-      // Handle specific Firebase auth errors
-      if (err.code === 'auth/popup-closed-by-user') {
-        setError('Sign-in was cancelled. Please try again.');
-      } else if (err.code === 'auth/network-request-failed') {
-        setError('Network error. Please check your internet connection.');
-      } else if (err.code === 'auth/unauthorized-domain') {
-        setError('This domain is not authorized for Google Sign-In. Contact support.');
-      } else if (err.code === 'auth/operation-not-supported-in-this-environment') {
-        setError('Google Sign-In is not supported in this environment.');
-      } else if (err.code === 'auth/auth-domain-config-required') {
-        setError('Firebase auth domain is not configured properly.');
-      } else {
-        setError(err.message || 'Failed to initiate Google Sign-In. Please try again.');
+      let userMessage = 'Failed to initiate Google Sign-In. Please try again.';
+      
+      switch (err.code) {
+        case 'auth/unauthorized-domain':
+          userMessage = '❌ This domain is not authorized for Google Sign-In. Ask the admin to configure Firebase Console.';
+          break;
+        
+        case 'auth/network-request-failed':
+          userMessage = 'Network error. Please check your internet connection and try again.';
+          break;
+        
+        case 'auth/operation-not-supported-in-this-environment':
+          userMessage = 'Google Sign-In is not supported in this browser. Try Chrome or Firefox.';
+          break;
+        
+        case 'auth/auth-domain-config-required':
+          userMessage = 'Firebase domain is not properly configured. Contact support.';
+          break;
+        
+        default:
+          userMessage = err.message || 'An error occurred. Please try again.';
       }
+      
+      setError(userMessage);
     }
   };
 
@@ -167,10 +251,14 @@ export default function Auth() {
                 className="space-y-6"
               >
                 {error && (
-                  <div className="bg-red-50 border border-red-100 text-red-700 px-4 py-3 rounded-xl flex items-center gap-3">
-                    <AlertCircle className="h-5 w-5" />
+                  <motion.div 
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-red-50 border border-red-100 text-red-700 px-4 py-3 rounded-xl flex items-start gap-3"
+                  >
+                    <AlertCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
                     <span className="text-sm font-medium">{error}</span>
-                  </div>
+                  </motion.div>
                 )}
 
                 {!isLogin && (
@@ -223,7 +311,7 @@ export default function Auth() {
                 <button 
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <>
@@ -242,16 +330,21 @@ export default function Auth() {
                   <div className="flex-1 h-px bg-gray-200"></div>
                 </div>
 
-                {/* Google Sign-In Button */}
+                {/* Google Sign-In Button - Production Ready */}
                 <button 
                   type="button"
                   onClick={handleGoogleSignIn}
                   disabled={loading}
-                  className="w-full bg-white border-2 border-gray-200 text-gray-700 py-3 rounded-xl font-bold text-lg hover:bg-gray-50 hover:border-gray-300 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                  className="w-full bg-white border-2 border-gray-200 text-gray-700 py-3 rounded-xl font-bold text-lg hover:bg-gray-50 hover:border-blue-300 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed group"
                 >
-                  <Chrome className="h-5 w-5" />
+                  <Chrome className="h-5 w-5 group-hover:text-blue-600" />
                   Continue with Google
                 </button>
+
+                {/* Production Domain Info */}
+                <div className="text-xs text-gray-500 text-center mt-4">
+                  Production Domain: <strong>notesdrive.shop</strong>
+                </div>
               </motion.form>
             )}
           </AnimatePresence>
