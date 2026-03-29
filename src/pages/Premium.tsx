@@ -89,7 +89,9 @@ export default function Premium() {
 } else {
   setError(verifyData.error || 'Payment verification failed.');
 }
-            
+          } catch (handlerErr) {
+            console.error("Payment handler error:", handlerErr);
+            setError('Payment processing error. Please contact support.');
           }
         },
         onDismiss: () => {
