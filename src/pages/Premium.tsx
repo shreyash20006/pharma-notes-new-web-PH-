@@ -32,6 +32,9 @@ export default function Premium() {
       if (!window.Razorpay) {
         throw new Error('Razorpay SDK not loaded. Please refresh the page.');
       }
+
+      setError('');
+      
       // 1. Create order on server
       const response = await fetch('/api/razorpay/order', {
         method: 'POST',
@@ -39,7 +42,16 @@ export default function Premium() {
         body: JSON.stringify({ amount: 499 }) // ₹499
       });
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to create order' }));
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+      }
+
       const order = await response.json();
+
+      if (!order.id) {
+        throw new Error('Invalid order response from server');
+      }
 
       // 2. Open Razorpay Checkout
       const options = {
@@ -50,29 +62,37 @@ export default function Premium() {
         description: "One-time subscription for premium study materials",
         order_id: order.id,
         handler: async (response: any) => {
-          // 3. Verify payment on server
-          const verifyResponse = await fetch('/api/razorpay/verify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(response)
-          });
+          try {
+            // 3. Verify payment on server
+            const verifyResponse = await fetch('/api/razorpay/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(response)
+            });
 
-          const verifyData = await verifyResponse.json();
+            const verifyData = await verifyResponse.json();
 
-          if (verifyData.success) {
-            // 4. Update user status in Firestore
-            try {
-              await updateDoc(doc(db, 'users', user!.uid), {
-                isPremium: true,
-                premiumSince: serverTimestamp()
-              });
-              window.location.href = '/dashboard?success=true';
-            } catch (dbErr) {
-              handleFirestoreError(dbErr, OperationType.UPDATE, `users/${user!.uid}`);
+            if (verifyData.success) {
+              // 4. Update user status in Firestore
+              try {
+                await updateDoc(doc(db, 'users', user!.uid), {
+                  isPremium: true,
+                  premiumSince: serverTimestamp()
+                });
+                window.location.href = '/dashboard?success=true';
+              } catch (dbErr) {
+                handleFirestoreError(dbErr, OperationType.UPDATE, `users/${user!.uid}`);
+              }
+            } else {
+              setError(verifyData.error || 'Payment verification failed.');
             }
-          } else {
-            setError('Payment verification failed.');
+          } catch (verifyErr) {
+            console.error('Verification error:', verifyErr);
+            setError('Failed to verify payment. Please contact support.');
           }
+        },
+        onDismiss: () => {
+          setError('Payment cancelled. Please try again.');
         },
         prefill: {
           name: userProfile?.displayName || user?.displayName || user?.email?.split('@')[0],
@@ -86,8 +106,8 @@ export default function Premium() {
       const rzp = new window.Razorpay(options);
       rzp.open();
     } catch (err) {
-      console.error(err);
-      setError('Failed to initiate Razorpay payment. Please try again.');
+      console.error('Razorpay initiation error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to initiate payment. Please try again.');
     }
   };
 
@@ -97,16 +117,16 @@ export default function Premium() {
         throw new Error('Cashfree SDK not loaded. Please refresh the page.');
       }
 
+      setError('');
+
       const env = import.meta.env.VITE_CASHFREE_ENV || 'SANDBOX';
       const mode = env.toUpperCase() === 'PRODUCTION' ? 'production' : 'sandbox';
       
-      console.log("Cashfree Environment Config:", env);
-      console.log("Initializing Cashfree SDK in mode:", mode);
+      console.log("Cashfree Environment:", env, "Mode:", mode);
 
       const cashfree = window.Cashfree({ mode });
 
       // 1. Create order on server
-      console.log("Requesting Cashfree order from server...");
       const response = await fetch('/api/cashfree/order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -119,17 +139,15 @@ export default function Premium() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Server-side order creation failed:", errorData);
-        throw new Error(errorData.error || 'Failed to create order on server');
+        const errorData = await response.json().catch(() => ({ error: 'Failed to create order' }));
+        throw new Error(errorData.error || `Server error: ${response.status}`);
       }
 
       const order = await response.json();
-      console.log("Cashfree Order created successfully:", order);
+      console.log("Order created:", order.order_id);
 
       if (!order.payment_session_id) {
-        console.error("Payment session ID missing in response data:", order);
-        throw new Error('Payment session ID missing from server response.');
+        throw new Error('Payment session ID missing from server response');
       }
 
       // 2. Initialize Checkout
@@ -138,11 +156,11 @@ export default function Premium() {
         redirectTarget: "_self",
       };
 
-      console.log("Opening Cashfree Checkout with options:", checkoutOptions);
+      console.log("Opening Cashfree Checkout...");
       cashfree.checkout(checkoutOptions);
     } catch (err: any) {
-      console.error("Cashfree Payment Error:", err);
-      setError(err.message || 'Failed to initiate Cashfree payment. Please try again.');
+      console.error("Cashfree payment error:", err);
+      setError(err.message || 'Failed to initiate payment. Please try again.');
     }
   };
 
@@ -166,7 +184,8 @@ export default function Premium() {
       console.error("Upgrade error:", err);
       setError(err.message || 'An unexpected error occurred. Please try again.');
     } finally {
-      setLoading(false);
+      // Don't set loading to false immediately as the payment handler might be async
+      setTimeout(() => setLoading(false), 500);
     }
   };
 
