@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
 import { useFirebase } from '../context/FirebaseContext';
-import { collection, query, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, getDocs } from 'firebase/firestore';
 import { Search, Filter, Loader2, SlidersHorizontal } from 'lucide-react';
 import NoteCard from './NoteCard';
 
@@ -33,18 +33,28 @@ export default function NoteList() {
   useEffect(() => {
     async function fetchNotes() {
       try {
-        const q = query(collection(db, 'notes'), orderBy('createdAt', 'desc'));
+        // Simple query without orderBy (avoids index requirement)
+        const q = query(collection(db, 'notes'));
         const snapshot = await getDocs(q);
         const data = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         })) as Note[];
         
-        // Only show approved notes or notes without status (admin uploads)
-        const approvedNotes = data.filter(note => 
-          note.status === 'approved' || !note.status || note.status === 'published'
-        );
+        console.log('Fetched notes:', data.length);
         
+        // Filter for approved/published notes and sort by createdAt
+        const approvedNotes = data
+          .filter(note => 
+            note.status === 'approved' || !note.status || note.status === 'published'
+          )
+          .sort((a, b) => {
+            const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+            const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+            return dateB.getTime() - dateA.getTime();
+          });
+        
+        console.log('Approved notes:', approvedNotes.length);
         setNotes(approvedNotes);
       } catch (error) {
         console.error("Error fetching notes:", error);
