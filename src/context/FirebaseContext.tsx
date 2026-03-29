@@ -52,7 +52,36 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const profileDoc = await getDoc(doc(db, 'users', currentUser.uid));
         
         if (profileDoc.exists()) {
-          setUserProfile({ ...basicProfile, ...profileDoc.data() });
+          const profileData = profileDoc.data();
+          
+          // Check if subscription has expired
+          let isPremiumActive = profileData.isPremium || false;
+          
+          if (isPremiumActive && profileData.premiumExpiresAt) {
+            const expiryDate = profileData.premiumExpiresAt.toDate ? 
+              profileData.premiumExpiresAt.toDate() : 
+              new Date(profileData.premiumExpiresAt);
+            
+            const now = new Date();
+            
+            // If subscription has expired, update Firestore
+            if (now > expiryDate) {
+              isPremiumActive = false;
+              
+              // Update Firestore to reflect expired status
+              await setDoc(doc(db, 'users', currentUser.uid), {
+                isPremium: false,
+                subscriptionExpired: true,
+                expiredAt: serverTimestamp()
+              }, { merge: true }).catch(console.error);
+            }
+          }
+          
+          setUserProfile({ 
+            ...basicProfile, 
+            ...profileData,
+            isPremium: isPremiumActive 
+          });
         } else {
           // Create profile in background
           setDoc(doc(db, 'users', currentUser.uid), {

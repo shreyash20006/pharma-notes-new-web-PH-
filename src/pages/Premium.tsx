@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useFirebase } from '../context/FirebaseContext';
 import { db } from '../lib/firebase';
 import { doc, updateDoc, serverTimestamp, getDoc, collection, query, where, getDocs, increment } from 'firebase/firestore';
-import { ShieldCheck, CheckCircle2, Zap, AlertCircle, Star, Crown, Rocket, CreditCard, BookOpen, Sparkles, Tag, X } from 'lucide-react';
+import { ShieldCheck, CheckCircle2, Zap, AlertCircle, Star, Crown, Rocket, CreditCard, BookOpen, Sparkles, Tag, X, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 
 declare global {
@@ -254,11 +254,17 @@ export default function Premium() {
             const verifyData = await verifyResponse.json();
 
             if (verifyData.success) {
-              // 4. Update user status in Firestore
+              // 4. Update user status in Firestore with expiry date
               try {
+                // Set subscription to expire after 2 months
+                const expiryDate = new Date();
+                expiryDate.setMonth(expiryDate.getMonth() + 2);
+                
                 await updateDoc(doc(db, 'users', user!.uid), {
                   isPremium: true,
-                  premiumSince: serverTimestamp()
+                  premiumSince: serverTimestamp(),
+                  premiumExpiresAt: expiryDate,
+                  subscriptionDuration: '2 months'
                 });
                 window.location.href = '/dashboard?success=true';
               } catch (dbErr) {
@@ -518,9 +524,22 @@ export default function Premium() {
             </ul>
             
             {userProfile?.isPremium ? (
-              <div className="bg-primary/5 text-primary px-8 py-5 rounded-2xl font-headline font-bold text-lg text-center flex items-center justify-center gap-3 border border-primary/20">
-                <ShieldCheck className="h-6 w-6" />
-                Pro Status Verified
+              <div className="space-y-4">
+                <div className="bg-primary/5 text-primary px-8 py-5 rounded-2xl font-headline font-bold text-lg text-center flex flex-col items-center justify-center gap-3 border border-primary/20">
+                  <div className="flex items-center gap-3">
+                    <ShieldCheck className="h-6 w-6" />
+                    Already Subscribed
+                  </div>
+                  {userProfile?.premiumExpiresAt && (
+                    <div className="text-sm font-body text-primary/70">
+                      Valid till: {new Date(userProfile.premiumExpiresAt.toDate?.() || userProfile.premiumExpiresAt).toLocaleDateString('en-IN', { 
+                        day: 'numeric', 
+                        month: 'long', 
+                        year: 'numeric' 
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="space-y-6">

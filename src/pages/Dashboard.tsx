@@ -52,9 +52,15 @@ export default function Dashboard() {
           const data = await response.json();
           
           if (data.order_status === 'PAID') {
+            // Set subscription to expire after 2 months
+            const expiryDate = new Date();
+            expiryDate.setMonth(expiryDate.getMonth() + 2);
+            
             await updateDoc(doc(db, 'users', user.uid), {
               isPremium: true,
-              premiumSince: serverTimestamp()
+              premiumSince: serverTimestamp(),
+              premiumExpiresAt: expiryDate,
+              subscriptionDuration: '2 months'
             });
             setPaymentSuccess(true);
             setTimeout(() => setPaymentSuccess(false), 5000);
@@ -272,7 +278,26 @@ export default function Dashboard() {
 
             {/* Quick Actions / Categories */}
             <div className="space-y-6">
-              {!userProfile?.isPremium && (
+              {userProfile?.isPremium ? (
+                <div className="bg-gradient-to-br from-primary to-purple-600 rounded-3xl p-6 text-white">
+                  <h3 className="font-headline font-bold text-lg mb-2 flex items-center gap-2">
+                    <ShieldCheck className="w-5 h-5" /> Premium Active
+                  </h3>
+                  <p className="text-sm opacity-90 mb-2">You have full access to all features!</p>
+                  {userProfile?.premiumExpiresAt && (
+                    <div className="mt-4 pt-4 border-t border-white/20">
+                      <p className="text-xs opacity-75 mb-1">Valid until:</p>
+                      <p className="font-bold">
+                        {new Date(userProfile.premiumExpiresAt.toDate?.() || userProfile.premiumExpiresAt).toLocaleDateString('en-IN', { 
+                          day: 'numeric', 
+                          month: 'long', 
+                          year: 'numeric' 
+                        })}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
                 <div className="bg-primary-container rounded-3xl p-6 text-on-primary-container">
                   <h3 className="font-headline font-bold text-lg mb-2 flex items-center gap-2">
                     <ShieldCheck className="w-5 h-5" /> Upgrade to Pro
