@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { signInWithGoogle, logout, auth } from '../lib/firebase';
 import { motion, AnimatePresence } from 'motion/react';
-import { Mail, Lock, User, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Mail, Lock, User, Loader2, AlertCircle, CheckCircle2, Chrome } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { onAuthStateChanged } from 'firebase/auth';
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -43,6 +45,38 @@ export default function Auth() {
       }
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await signInWithGoogle();
+      
+      if (result.user) {
+        // Optional: Create/update user profile in Supabase if needed
+        const displayName = result.user.displayName || result.user.email?.split('@')[0] || 'User';
+        
+        // Small delay to ensure Firebase session is established
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        navigate('/dashboard');
+      }
+    } catch (err: any) {
+      console.error('Google Sign-In Error:', err);
+      
+      // Handle specific Firebase auth errors
+      if (err.code === 'auth/popup-closed-by-user') {
+        setError('Sign-in was cancelled. Please try again.');
+      } else if (err.code === 'auth/network-request-failed') {
+        setError('Network error. Please check your internet connection.');
+      } else {
+        setError(err.message || 'Failed to sign in with Google. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -164,6 +198,24 @@ export default function Auth() {
                   ) : (
                     isLogin ? 'Login' : 'Create Account'
                   )}
+                </button>
+
+                {/* Divider */}
+                <div className="flex items-center gap-4">
+                  <div className="flex-1 h-px bg-gray-200"></div>
+                  <span className="text-xs text-gray-500 font-medium">OR</span>
+                  <div className="flex-1 h-px bg-gray-200"></div>
+                </div>
+
+                {/* Google Sign-In Button */}
+                <button 
+                  type="button"
+                  onClick={handleGoogleSignIn}
+                  disabled={loading}
+                  className="w-full bg-white border-2 border-gray-200 text-gray-700 py-3 rounded-xl font-bold text-lg hover:bg-gray-50 hover:border-gray-300 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                >
+                  <Chrome className="h-5 w-5" />
+                  Continue with Google
                 </button>
               </motion.form>
             )}
