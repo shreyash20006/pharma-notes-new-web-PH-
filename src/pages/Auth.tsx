@@ -14,10 +14,19 @@ export default function Auth() {
     setError(null);
 
     try {
-      await signInWithGoogle();
-      navigate('/dashboard');
+      const result = await signInWithGoogle();
+      if (result.user) {
+        navigate('/dashboard');
+      }
     } catch (err: any) {
-      setError(err.message);
+      console.error('Login error:', err);
+      if (err.code === 'auth/popup-closed-by-user') {
+        setError('Sign-in cancelled. Please try again.');
+      } else if (err.code === 'auth/popup-blocked') {
+        setError('Popup blocked. Please allow popups for this site.');
+      } else {
+        setError(err.message || 'Failed to sign in. Please try again.');
+      }
     } finally {
       setLoading(false);
     }

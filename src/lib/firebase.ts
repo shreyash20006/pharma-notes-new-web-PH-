@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithRedirect, signOut } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 // Firebase config from .env
@@ -22,9 +22,9 @@ export const db = getFirestore(app);
 // Google provider
 const provider = new GoogleAuthProvider();
 
-// Sign in
+// Sign in with popup (more reliable than redirect on Vercel)
 export const signInWithGoogle = () => {
-  return signInWithRedirect(auth, provider);
+  return signInWithPopup(auth, provider);
 };
 
 // ✅ LOGOUT (IMPORTANT FIX)
