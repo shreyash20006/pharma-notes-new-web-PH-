@@ -32,7 +32,16 @@ export default function Premium() {
         body: JSON.stringify({ amount: 499 }) // ₹499
       });
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to create order' }));
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+      }
+
       const order = await response.json();
+
+      if (!order.id) {
+        throw new Error('Invalid order response from server');
+      }
 
       // 2. Open Razorpay Checkout
       const options = {
@@ -43,33 +52,38 @@ export default function Premium() {
         description: "One-time subscription for B.Pharma study materials",
         order_id: order.id,
         handler: async (response: any) => {
-          // 3. Verify payment on server
-          const verifyResponse = await fetch('/api/razorpay/verify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(response)
-          });
+          try {
+            // 3. Verify payment on server
+            const verifyResponse = await fetch('/api/razorpay/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(response)
+            });
 
-          const verifyData = await verifyResponse.json();
+            const verifyData = await verifyResponse.json();
 
-          if (verifyData.success) {
-            // 4. Update user status in Supabase
-            const { error: updateError } = await supabase
-              .from('users')
-              .update({ is_premium: true })
-              .eq('email', user.email);
+            if (verifyData.success) {
+              // 4. Update user status in Supabase
+              const { error: updateError } = await supabase
+                .from('users')
+                .update({ is_premium: true })
+                .eq('email', user.email);
 
-            if (!updateError) {
-              window.location.href = '/dashboard?success=true';
+              if (!updateError) {
+                window.location.href = '/dashboard?success=true';
+              } else {
+                setError('Payment successful but failed to update profile. Please contact support.');
+              }
             } else {
-              setError('Payment successful but failed to update profile. Please contact support.');
+              setError(verifyData.error || 'Payment verification failed.');
             }
-          } else {
-            setError('Payment verification failed.');
+          } catch (verifyErr) {
+            console.error('Verification error:', verifyErr);
+            setError('Failed to verify payment. Please contact support.');
           }
         },
         prefill: {
-          name: user.displayName,
+          name: profile?.displayName || user?.email?.split('@')[0] || 'Premium User',
           email: user.email
         },
         theme: {
@@ -80,8 +94,8 @@ export default function Premium() {
       const rzp = new window.Razorpay(options);
       rzp.open();
     } catch (err) {
-      console.error(err);
-      setError('Failed to initiate payment. Please try again.');
+      console.error('Payment initiation error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to initiate payment. Please try again.');
     } finally {
       setLoading(false);
     }

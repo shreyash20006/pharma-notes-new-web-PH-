@@ -27,7 +27,7 @@ export default function Dashboard() {
           <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm text-center">
             <div className="relative inline-block mb-6">
               <div className="h-24 w-24 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-3xl font-bold border-4 border-white shadow-lg">
-                {user.displayName?.[0] || 'U'}
+                {profile?.displayName?.[0] || user?.email?.[0] || 'U'}
               </div>
               {profile?.is_premium && (
                 <div className="absolute -bottom-1 -right-1 bg-amber-400 text-white p-1.5 rounded-full border-2 border-white" title="Premium Member">
@@ -35,7 +35,7 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-1">{user.displayName}</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-1">{profile?.displayName || user?.email?.split('@')[0] || 'User'}</h2>
             <p className="text-gray-500 text-sm mb-6 flex items-center justify-center gap-1.5">
               <Mail className="h-4 w-4" />
               {user.email}
