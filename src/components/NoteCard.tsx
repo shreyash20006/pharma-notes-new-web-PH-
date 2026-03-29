@@ -1,6 +1,7 @@
-import { HardDrive, Lock, Download, ExternalLink, ChevronDown, ChevronUp, Clock, GraduationCap } from 'lucide-react';
+import { HardDrive, Lock, Download, ExternalLink, ChevronDown, ChevronUp, Clock, GraduationCap, Crown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 interface NoteCardProps {
   note: {
@@ -14,39 +15,57 @@ interface NoteCardProps {
     university?: string;
     course_code?: string;
     price?: number;
-    // Optional UI fields
+    isPremium?: boolean;
     subject?: string;
     course?: string;
+    branch?: string;
+    semester?: string;
   };
-  isPremium: boolean;
+  isPremium: boolean; // User's premium status
   onUnlock?: () => void;
 }
 
 export default function NoteCard({ note, isPremium, onUnlock }: NoteCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  // For now, assume all user uploads are free unless specified
-  const canAccess = true; 
+  
+  // Check if this note requires premium
+  const isNotePremium = note.isPremium || (note.price && note.price > 0);
+  
+  // User can access if: note is free OR user has premium
+  const canAccess = !isNotePremium || isPremium;
 
   return (
     <motion.div 
       initial={{ opacity: 0, scale: 0.95 }}
       whileHover={{ y: -5 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="bg-surface-container-lowest rounded-[2rem] border border-outline-variant shadow-sm hover:shadow-2xl hover:shadow-primary/5 transition-all overflow-hidden group"
+      className="bg-surface-container-lowest rounded-[2rem] border border-outline-variant shadow-sm hover:shadow-2xl hover:shadow-primary/5 transition-all overflow-hidden group relative"
     >
+      {/* Premium Badge */}
+      {isNotePremium && (
+        <div className="absolute top-4 right-4 z-10">
+          <div className="flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs font-bold rounded-full shadow-lg">
+            <Crown className="w-3 h-3" />
+            Premium
+          </div>
+        </div>
+      )}
+
       <div className="p-8">
         <div className="flex justify-between items-start mb-6">
           <div className="bg-primary-container/20 p-4 rounded-2xl group-hover:bg-primary group-hover:text-white transition-all duration-300">
             <HardDrive className="h-6 w-6 text-primary group-hover:text-white" />
           </div>
           <div className="flex gap-2">
-            <div className="px-3 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] font-bold uppercase tracking-widest">
-              {note.price ? `₹${note.price}` : 'Open Access'}
-            </div>
+            {!isNotePremium && (
+              <div className="px-3 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] font-bold uppercase tracking-widest">
+                Free
+              </div>
+            )}
           </div>
         </div>
         
-        <h3 className="text-xl font-headline font-extrabold text-on-surface mb-2 line-clamp-1 group-hover:text-primary transition-colors">
+        <h3 className="text-xl font-headline font-extrabold text-on-surface mb-2 line-clamp-2 group-hover:text-primary transition-colors">
           {note.title}
         </h3>
         
@@ -55,10 +74,16 @@ export default function NoteCard({ note, isPremium, onUnlock }: NoteCardProps) {
             <GraduationCap className="w-3.5 h-3.5" />
             {note.category || note.subject || 'General'}
           </span>
-          <span className="flex items-center gap-1.5 text-xs font-medium text-on-surface-variant">
-            <Clock className="w-3.5 h-3.5" />
-            {new Date(note.created_at).toLocaleDateString()}
-          </span>
+          {note.university && (
+            <span className="text-xs font-medium text-on-surface-variant bg-surface-container-high px-2.5 py-1 rounded-lg">
+              {note.university}
+            </span>
+          )}
+          {note.branch && (
+            <span className="text-xs font-medium text-on-surface-variant bg-surface-container-high px-2.5 py-1 rounded-lg">
+              {note.branch}
+            </span>
+          )}
         </div>
         
         <AnimatePresence>
@@ -72,16 +97,16 @@ export default function NoteCard({ note, isPremium, onUnlock }: NoteCardProps) {
               <div className="pt-4 border-t border-outline-variant space-y-4">
                 {note.description && (
                   <div>
-                    <h4 className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">Technical Synopsis</h4>
+                    <h4 className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">Description</h4>
                     <p className="text-sm text-on-surface-variant leading-relaxed font-body">{note.description}</p>
                   </div>
                 )}
-                {(note.university || note.course_code) && (
+                {(note.semester || note.course_code) && (
                   <div className="grid grid-cols-2 gap-4">
-                    {note.university && (
+                    {note.semester && (
                       <div>
-                        <h4 className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">Institution</h4>
-                        <p className="text-xs font-bold text-on-surface">{note.university}</p>
+                        <h4 className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">Semester</h4>
+                        <p className="text-xs font-bold text-on-surface">{note.semester}</p>
                       </div>
                     )}
                     {note.course_code && (
@@ -105,12 +130,12 @@ export default function NoteCard({ note, isPremium, onUnlock }: NoteCardProps) {
             {isExpanded ? (
               <>
                 <ChevronUp className="h-3 w-3" />
-                Collapse Specs
+                Collapse
               </>
             ) : (
               <>
                 <ChevronDown className="h-3 w-3" />
-                Expand Specs
+                More Details
               </>
             )}
           </button>
@@ -129,23 +154,22 @@ export default function NoteCard({ note, isPremium, onUnlock }: NoteCardProps) {
                 </a>
                 <a 
                   href={note.file_url}
-                  download={`${note.title}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="p-3.5 bg-surface-container-high text-on-surface-variant hover:text-primary hover:bg-primary/10 rounded-2xl transition-all"
-                  title="Download Archival Copy"
+                  title="Download"
                 >
                   <Download className="h-5 w-5" />
                 </a>
               </>
             ) : (
-              <button 
-                onClick={onUnlock}
-                className="w-full flex items-center justify-center gap-3 bg-on-surface text-surface px-6 py-3.5 rounded-2xl text-sm font-bold hover:opacity-90 transition-all"
+              <Link 
+                to="/premium"
+                className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-6 py-3.5 rounded-2xl text-sm font-bold hover:shadow-lg hover:shadow-orange-500/30 transition-all"
               >
                 <Lock className="h-4 w-4" />
                 Unlock with Premium
-              </button>
+              </Link>
             )}
           </div>
         </div>

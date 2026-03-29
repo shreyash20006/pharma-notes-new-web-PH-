@@ -118,9 +118,12 @@ export default function NoteList() {
                 file_url: note.driveLink || note.fileUrl || '#',
                 uploaded_by: note.uploadedBy,
                 created_at: note.createdAt?.toDate ? note.createdAt.toDate().toISOString() : note.createdAt,
-                course_code: note.courseCode
+                course_code: note.courseCode,
+                isPremium: note.isPremium,
+                branch: note.branch,
+                semester: note.semester
               }} 
-              isPremium={userProfile?.isPremium} 
+              isPremium={userProfile?.isPremium || false} 
               onUnlock={() => window.location.href = '/premium'}
             />
           ))}

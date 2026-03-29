@@ -1,134 +1,99 @@
-import { useState } from 'react';
-import { ai } from '../lib/gemini';
-import { useFirebase } from '../context/FirebaseContext';
-import { Brain, Send, Copy, CheckCircle2, Loader2, Sparkles, AlertCircle, HelpCircle } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
+import { HelpCircle, Sparkles, Zap, BookOpen } from 'lucide-react';
 import { motion } from 'motion/react';
+import { Link } from 'react-router-dom';
 
 export default function Quiz() {
-  const { user } = useFirebase();
-  const [inputText, setInputText] = useState('');
-  const [quiz, setQuiz] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [error, setError] = useState('');
-
-  const handleGenerateQuiz = async () => {
-    if (!inputText.trim()) return;
-    if (!user) {
-      setError('Please login to use MCQ Generator.');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-    setQuiz('');
-
-    try {
-      const result = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: `You are a professional medical and pharmacy educator. Generate 5 multiple-choice questions (MCQs) from the following study notes for a B.Pharma student. For each question, provide 4 options (A, B, C, D) and the correct answer with a brief explanation. \n\nNotes: ${inputText}`,
-      });
-      setQuiz(result.text || "");
-    } catch (err) {
-      console.error(err);
-      setError('Failed to generate quiz. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(quiz);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="text-center mb-12">
-        <div className="bg-blue-100 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6">
-          <HelpCircle className="h-8 w-8 text-blue-600" />
-        </div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">AI MCQ Generator</h1>
-        <p className="text-gray-500 max-w-2xl mx-auto">
-          Instantly generate practice multiple-choice questions from your notes to test your knowledge and prepare for exams.
-        </p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 pt-24 pb-12">
+      {/* Background effects */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Input Area */}
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Input Notes</h3>
-              <span className="text-xs text-gray-400">{inputText.length} characters</span>
+      <div className="max-w-4xl mx-auto px-6 relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center"
+        >
+          {/* Icon */}
+          <motion.div
+            initial={{ scale: 0.8 }}
+            animate={{ scale: 1 }}
+            className="relative inline-block mb-8"
+          >
+            <div className="w-24 h-24 bg-gradient-to-br from-green-500 to-emerald-600 rounded-3xl flex items-center justify-center shadow-2xl">
+              <HelpCircle className="w-12 h-12 text-white" />
             </div>
-            <textarea 
-              className="w-full h-80 p-4 rounded-2xl border border-gray-100 bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none transition-all text-gray-700 leading-relaxed"
-              placeholder="Paste your notes here to generate MCQs..."
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-            />
-            <button 
-              onClick={handleGenerateQuiz}
-              disabled={loading || !inputText.trim()}
-              className="w-full mt-6 bg-blue-600 text-white px-6 py-4 rounded-2xl font-bold text-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-xl shadow-blue-100 flex items-center justify-center gap-2"
+            <motion.div
+              animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="absolute -top-2 -right-2"
             >
-              {loading ? (
-                <>
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  Generating MCQs...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-5 w-5" />
-                  Generate MCQs
-                </>
-              )}
-            </button>
-            {error && (
-              <div className="mt-4 p-4 bg-red-50 text-red-600 rounded-xl flex items-center gap-3 text-sm font-medium">
-                <AlertCircle className="h-5 w-5" />
-                {error}
-              </div>
-            )}
-          </div>
-        </div>
+              <Sparkles className="w-8 h-8 text-yellow-400" />
+            </motion.div>
+          </motion.div>
 
-        {/* Output Area */}
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm h-full min-h-[400px] flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Practice Quiz</h3>
-              {quiz && (
-                <button 
-                  onClick={copyToClipboard}
-                  className="flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
-                >
-                  {copied ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  {copied ? 'Copied!' : 'Copy Quiz'}
-                </button>
-              )}
+          <h1 className="text-5xl font-bold text-white mb-4">
+            MCQ <span className="bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">Generator</span>
+          </h1>
+          
+          <p className="text-white/60 text-lg mb-12 max-w-2xl mx-auto">
+            Generate practice questions from your study notes instantly with AI-powered MCQ creation.
+          </p>
+
+          {/* Coming Soon Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 p-12 max-w-xl mx-auto"
+            style={{
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+            }}
+          >
+            <div className="w-16 h-16 bg-orange-500/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <Zap className="w-8 h-8 text-orange-400" />
             </div>
             
-            <div className="flex-grow overflow-y-auto pr-2">
-              {quiz ? (
-                <div className="prose prose-blue max-w-none text-gray-700 leading-relaxed">
-                  <ReactMarkdown>{quiz}</ReactMarkdown>
+            <h2 className="text-2xl font-bold text-white mb-4">Coming Soon!</h2>
+            
+            <p className="text-white/60 mb-8">
+              We're building an intelligent MCQ generator to help you practice effectively. 
+              Stay tuned!
+            </p>
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 text-left bg-white/5 rounded-xl p-4">
+                <div className="w-10 h-10 bg-green-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <HelpCircle className="w-5 h-5 text-green-400" />
                 </div>
-              ) : (
-                <div className="h-full flex flex-col items-center justify-center text-center text-gray-400 py-20">
-                  <div className="bg-gray-50 p-6 rounded-full mb-6">
-                    <HelpCircle className="h-10 w-10 opacity-20" />
-                  </div>
-                  <p className="font-medium">Your MCQs will appear here.</p>
-                  <p className="text-xs mt-2">Paste notes on the left and click "Generate MCQs".</p>
+                <div>
+                  <h3 className="text-white font-medium">Auto MCQ Generation</h3>
+                  <p className="text-white/50 text-sm">Create questions from any text</p>
                 </div>
-              )}
+              </div>
+              
+              <div className="flex items-center gap-3 text-left bg-white/5 rounded-xl p-4">
+                <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <BookOpen className="w-5 h-5 text-blue-400" />
+                </div>
+                <div>
+                  <h3 className="text-white font-medium">With Explanations</h3>
+                  <p className="text-white/50 text-sm">Detailed answers for learning</p>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+
+            <Link
+              to="/notes"
+              className="inline-block mt-8 bg-green-500 text-white px-8 py-4 rounded-2xl font-bold hover:bg-green-600 transition-all"
+            >
+              Browse Notes Instead
+            </Link>
+          </motion.div>
+        </motion.div>
       </div>
     </div>
   );
