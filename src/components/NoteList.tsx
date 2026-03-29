@@ -9,13 +9,18 @@ interface Note {
   id: string;
   title: string;
   description?: string;
-  fileUrl: string;
+  fileUrl?: string;
+  driveLink?: string;
   uploadedBy: string;
   createdAt: any;
   category?: string;
   university?: string;
   courseCode?: string;
+  branch?: string;
+  semester?: string;
   price?: number;
+  isPremium?: boolean;
+  status?: string;
 }
 
 export default function NoteList() {
@@ -35,36 +40,15 @@ export default function NoteList() {
           ...doc.data()
         })) as Note[];
         
-        setNotes(data);
+        // Only show approved notes or notes without status (admin uploads)
+        const approvedNotes = data.filter(note => 
+          note.status === 'approved' || !note.status || note.status === 'published'
+        );
+        
+        setNotes(approvedNotes);
       } catch (error) {
         console.error("Error fetching notes:", error);
-        // Fallback to mock data if there's an error (e.g. no collection yet)
-        setNotes([
-          {
-            id: '1',
-            title: 'Advanced Thermodynamics',
-            description: 'Comprehensive study of human anatomy and physiology, focusing on skeletal and muscular systems.',
-            fileUrl: '#',
-            uploadedBy: 'system',
-            createdAt: new Date().toISOString(),
-            category: 'Engineering',
-            university: 'MIT',
-            courseCode: 'ME-401',
-            price: 499
-          },
-          {
-            id: '2',
-            title: 'Pharmaceutical Analysis',
-            description: 'Introduction to quality control and analytical techniques in pharmacy.',
-            fileUrl: '#',
-            uploadedBy: 'system',
-            createdAt: new Date().toISOString(),
-            category: 'Pharmacy',
-            university: 'Stanford',
-            courseCode: 'PH-102',
-            price: 299
-          }
-        ]);
+        setNotes([]);
       } finally {
         setLoading(false);
       }
@@ -121,7 +105,7 @@ export default function NoteList() {
               key={note.id} 
               note={{
                 ...note,
-                file_url: note.fileUrl,
+                file_url: note.driveLink || note.fileUrl || '#',
                 uploaded_by: note.uploadedBy,
                 created_at: note.createdAt?.toDate ? note.createdAt.toDate().toISOString() : note.createdAt,
                 course_code: note.courseCode
