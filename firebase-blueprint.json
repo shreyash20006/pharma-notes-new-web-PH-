@@ -1,0 +1,22 @@
+{
+  "entities": {
+    "users": {
+      "title": "User Profile",
+      "description": "User profile information stored in Firestore (optional, primary data is in Supabase)",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "name": { "type": "string" },
+        "is_premium": { "type": "boolean" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "name"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "users",
+      "description": "User profile document"
+    }
+  }
+}

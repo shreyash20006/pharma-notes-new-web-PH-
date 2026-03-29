@@ -1,0 +1,13 @@
+import NoteList from '../components/NoteList';
+
+export default function Notes() {
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="mb-12">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Study Notes</h1>
+        <p className="text-gray-500">Access high-quality B.Pharma study materials.</p>
+      </div>
+      <NoteList />
+    </div>
+  );
+}
