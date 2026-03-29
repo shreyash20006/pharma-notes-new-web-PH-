@@ -23,6 +23,7 @@ interface Note {
   views: number;
   downloads: number;
   status?: string;
+  price?: number;
 }
 
 const CATEGORIES = [
@@ -43,6 +44,8 @@ export default function Admin() {
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'pending'>('all');
+  const [editingPrice, setEditingPrice] = useState<string | null>(null);
+  const [priceInput, setPriceInput] = useState('');
   
   const [form, setForm] = useState({
     title: '',
@@ -53,6 +56,7 @@ export default function Admin() {
     branch: 'CSE',
     driveLink: '',
     isPremium: false,
+    price: 0,
   });
 
   useEffect(() => {
@@ -100,6 +104,7 @@ export default function Admin() {
         views: 0,
         downloads: 0,
         status: 'approved',
+        price: form.price || 0,
       });
 
       setForm({
@@ -111,6 +116,7 @@ export default function Admin() {
         branch: 'CSE',
         driveLink: '',
         isPremium: false,
+        price: 0,
       });
       setShowForm(false);
       fetchNotes();
@@ -124,11 +130,27 @@ export default function Admin() {
   const handleTogglePremium = async (noteId: string, currentStatus: boolean) => {
     try {
       await updateDoc(doc(db, 'notes', noteId), {
-        isPremium: !currentStatus
+        isPremium: !currentStatus,
+        price: !currentStatus ? 499 : 0 // Default price when making premium
       });
       fetchNotes();
     } catch (error) {
       console.error('Error toggling premium:', error);
+    }
+  };
+
+  const handleSetPrice = async (noteId: string) => {
+    const price = parseInt(priceInput) || 0;
+    try {
+      await updateDoc(doc(db, 'notes', noteId), {
+        price: price,
+        isPremium: price > 0
+      });
+      setEditingPrice(null);
+      setPriceInput('');
+      fetchNotes();
+    } catch (error) {
+      console.error('Error setting price:', error);
     }
   };
 
@@ -332,12 +354,27 @@ export default function Admin() {
                   <input
                     type="checkbox"
                     checked={form.isPremium}
-                    onChange={(e) => setForm({ ...form, isPremium: e.target.checked })}
+                    onChange={(e) => setForm({ ...form, isPremium: e.target.checked, price: e.target.checked ? 499 : 0 })}
                     className="w-5 h-5 rounded border-gray-600 bg-gray-700 text-purple-500 focus:ring-purple-500"
                   />
                   <span className="text-gray-300">Premium Only (Paid users)</span>
                 </label>
               </div>
+
+              {form.isPremium && (
+                <div className="md:col-span-2">
+                  <label className="block text-gray-300 text-sm mb-2">Price (₹)</label>
+                  <input
+                    type="number"
+                    value={form.price}
+                    onChange={(e) => setForm({ ...form, price: parseInt(e.target.value) || 0 })}
+                    className="w-full bg-gray-700 border border-gray-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-purple-500"
+                    placeholder="499"
+                    min="0"
+                  />
+                  <p className="text-gray-500 text-xs mt-1">Set 0 for subscription-based access only</p>
+                </div>
+              )}
 
               <div className="md:col-span-2 flex gap-4">
                 <button
@@ -458,6 +495,39 @@ export default function Admin() {
                       >
                         {note.isPremium ? '💎 Premium' : '🆓 Free'}
                       </button>
+                      
+                      {/* Price Edit */}
+                      {editingPrice === note.id ? (
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            value={priceInput}
+                            onChange={(e) => setPriceInput(e.target.value)}
+                            className="w-20 bg-gray-700 border border-gray-600 rounded-lg px-2 py-1 text-white text-xs"
+                            placeholder="₹499"
+                            autoFocus
+                          />
+                          <button
+                            onClick={() => handleSetPrice(note.id)}
+                            className="p-1 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30"
+                          >
+                            <Check className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => { setEditingPrice(null); setPriceInput(''); }}
+                            className="p-1 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => { setEditingPrice(note.id); setPriceInput(String(note.price || 0)); }}
+                          className="px-2 py-1 text-xs rounded-lg bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 font-bold"
+                        >
+                          ₹{note.price || 0}
+                        </button>
+                      )}
                     </div>
                     <div className="flex gap-2">
                       {activeTab === 'pending' ? (
