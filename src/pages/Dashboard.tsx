@@ -23,7 +23,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function Dashboard() {
-  const { user, userProfile, loading, isAuthReady } = useFirebase();
+  const { user, userProfile, loading, isAuthReady, isAdmin } = useFirebase();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [recentNotes, setRecentNotes] = useState<any[]>([]);
@@ -133,6 +133,17 @@ export default function Dashboard() {
           <SidebarLink icon={<FileText className="w-5 h-5" />} label="My Notes" />
           <SidebarLink icon={<BarChart3 className="w-5 h-5" />} label="Analytics" />
           <SidebarLink icon={<Settings className="w-5 h-5" />} label="Settings" />
+          
+          {/* Admin Panel Link - Only for admins */}
+          {isAdmin && (
+            <Link
+              to="/admin"
+              className="flex items-center gap-3 px-4 py-3 text-white bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl font-bold mt-4 hover:shadow-lg transition-all"
+            >
+              <ShieldCheck className="w-5 h-5" />
+              <span>Admin Panel</span>
+            </Link>
+          )}
         </nav>
 
         <div className="p-4 border-t border-outline-variant">
