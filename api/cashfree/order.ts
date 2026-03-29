@@ -1,5 +1,4 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { Cashfree } from 'cashfree-pg';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS headers
@@ -21,17 +20,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const env = (process.env.VITE_CASHFREE_ENV || 'SANDBOX').toUpperCase();
 
     if (!appId || !secretKey) {
-      console.error('Missing Cashfree credentials');
+      console.error('Missing Cashfree credentials:', { appId: !!appId, secretKey: !!secretKey });
       return res.status(500).json({
         error: 'Cashfree API keys not configured',
       });
     }
-
-    // Initialize Cashfree
-    const cf = Cashfree as any;
-    cf.XClientId = appId;
-    cf.XClientSecret = secretKey;
-    cf.XEnvironment = env === 'PRODUCTION' ? cf.Environment?.PRODUCTION || 'PRODUCTION' : cf.Environment?.SANDBOX || 'SANDBOX';
 
     const { amount, customerId, customerPhone, customerEmail, orderId } = req.body;
 
@@ -39,35 +32,52 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Invalid amount' });
     }
 
-    const origin = req.headers.origin || req.headers.referer || 'https://notesdrive.vercel.app';
+    const origin = req.headers.origin || req.headers.referer || 'https://www.notesdrive.shop';
 
-    const request = {
+    const orderRequest = {
       order_amount: amount,
       order_currency: 'INR',
       order_id: orderId || `order_${Date.now()}`,
       customer_details: {
-        customer_id: customerId,
+        customer_id: customerId || `cust_${Date.now()}`,
         customer_phone: customerPhone || '9999999999',
-        customer_email: customerEmail,
+        customer_email: customerEmail || 'customer@example.com',
       },
       order_meta: {
         return_url: `${origin}/dashboard?order_id={order_id}`,
       },
     };
 
-    const response = await cf.PGCreateOrder('2023-08-01', request);
-    console.log('Cashfree order created:', response.data?.order_id);
+    // Use Cashfree REST API directly
+    const apiUrl = env === 'PRODUCTION' 
+      ? 'https://api.cashfree.com/pg/orders'
+      : 'https://sandbox.cashfree.com/pg/orders';
 
-    if (!response.data) {
-      return res.status(500).json({
-        error: response.message || 'Failed to create Cashfree order',
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-client-id': appId,
+        'x-client-secret': secretKey,
+        'x-api-version': '2023-08-01',
+      },
+      body: JSON.stringify(orderRequest),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('Cashfree API error:', data);
+      return res.status(response.status).json({
+        error: data.message || 'Failed to create Cashfree order',
       });
     }
 
-    return res.status(200).json(response.data);
+    console.log('Cashfree order created:', data.order_id);
+    return res.status(200).json(data);
   } catch (error: any) {
     console.error('Cashfree order error:', error);
-    const errorMessage = error.response?.data?.message || error.message || 'Failed to create Cashfree order';
+    const errorMessage = error.message || 'Failed to create Cashfree order';
     return res.status(500).json({ error: errorMessage });
   }
 }

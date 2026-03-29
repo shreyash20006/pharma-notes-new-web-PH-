@@ -1,5 +1,4 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { Cashfree } from 'cashfree-pg';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS headers
@@ -27,31 +26,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Initialize Cashfree
-    const cf = Cashfree as any;
-    cf.XClientId = appId;
-    cf.XClientSecret = secretKey;
-    cf.XEnvironment = env === 'PRODUCTION' ? cf.Environment?.PRODUCTION || 'PRODUCTION' : cf.Environment?.SANDBOX || 'SANDBOX';
-
     const { orderId } = req.query;
 
     if (!orderId || typeof orderId !== 'string') {
       return res.status(400).json({ error: 'Order ID is required' });
     }
 
-    const response = await cf.PGGetOrder('2023-08-01', orderId);
-    console.log('Cashfree order verified:', orderId);
+    // Use Cashfree REST API directly
+    const apiUrl = env === 'PRODUCTION' 
+      ? `https://api.cashfree.com/pg/orders/${orderId}`
+      : `https://sandbox.cashfree.com/pg/orders/${orderId}`;
 
-    if (!response.data) {
-      return res.status(500).json({
-        error: response.message || 'Failed to verify order',
+    const response = await fetch(apiUrl, {
+      method: 'GET',
+      headers: {
+        'x-client-id': appId,
+        'x-client-secret': secretKey,
+        'x-api-version': '2023-08-01',
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('Cashfree verify error:', data);
+      return res.status(response.status).json({
+        error: data.message || 'Failed to verify order',
       });
     }
 
-    return res.status(200).json(response.data);
+    console.log('Cashfree order verified:', orderId);
+    return res.status(200).json(data);
   } catch (error: any) {
     console.error('Cashfree verification error:', error);
-    const errorMessage = error.response?.data?.message || error.message || 'Failed to verify payment';
+    const errorMessage = error.message || 'Failed to verify payment';
     return res.status(500).json({ error: errorMessage });
   }
 }
