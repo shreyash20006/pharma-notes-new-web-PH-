@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { signInWithGoogle, logout, auth } from '../lib/firebase';
+import { signInWithGoogle, handleRedirectResult, logout, auth } from '../lib/firebase';
 import { motion, AnimatePresence } from 'motion/react';
 import { Mail, Lock, User, Loader2, AlertCircle, CheckCircle2, Chrome } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -16,6 +16,39 @@ export default function Auth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+
+  // Handle Firebase redirect result on page load
+  useEffect(() => {
+    const handleGoogleRedirect = async () => {
+      try {
+        console.log('Auth page loaded, checking for Google redirect result...');
+        const result = await handleRedirectResult();
+        
+        if (result && result.user) {
+          console.log('Google Sign-In successful, redirecting to dashboard:', result.user.email);
+          // Wait a moment for session to be established
+          await new Promise(resolve => setTimeout(resolve, 500));
+          navigate('/dashboard');
+        }
+      } catch (err: any) {
+        console.error('Error handling Google redirect:', err);
+        
+        // Handle specific error codes
+        if (err.code === 'auth/account-exists-with-different-credential') {
+          setError('An account already exists with this email address. Please sign in with your original method.');
+        } else if (err.code === 'auth/auth-domain-config-required') {
+          setError('Firebase auth domain is not configured. Please contact support.');
+        } else if (err.code === 'auth/operation-not-supported-in-this-environment') {
+          setError('Sign-in is not supported in this environment.');
+        } else if (err.code !== 'auth/popup-closed-by-user') {
+          // Only show error if it's not just a user closing a popup
+          setError(err.message || 'An error occurred during sign-in.');
+        }
+      }
+    };
+
+    handleGoogleRedirect();
+  }, [navigate]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,30 +88,32 @@ export default function Auth() {
     setError(null);
 
     try {
-      const result = await signInWithGoogle();
+      console.log('User clicked "Continue with Google"');
+      // This will redirect to Google, then back to this page
+      // The useEffect hook will handle the result
+      await signInWithGoogle();
       
-      if (result.user) {
-        // Optional: Create/update user profile in Supabase if needed
-        const displayName = result.user.displayName || result.user.email?.split('@')[0] || 'User';
-        
-        // Small delay to ensure Firebase session is established
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        navigate('/dashboard');
-      }
+      // Note: We won't reach here if redirect is successful
+      // This is expected behavior for signInWithRedirect
+      console.log('Google Sign-In redirect initiated');
     } catch (err: any) {
       console.error('Google Sign-In Error:', err);
+      setLoading(false);
       
       // Handle specific Firebase auth errors
       if (err.code === 'auth/popup-closed-by-user') {
         setError('Sign-in was cancelled. Please try again.');
       } else if (err.code === 'auth/network-request-failed') {
         setError('Network error. Please check your internet connection.');
+      } else if (err.code === 'auth/unauthorized-domain') {
+        setError('This domain is not authorized for Google Sign-In. Contact support.');
+      } else if (err.code === 'auth/operation-not-supported-in-this-environment') {
+        setError('Google Sign-In is not supported in this environment.');
+      } else if (err.code === 'auth/auth-domain-config-required') {
+        setError('Firebase auth domain is not configured properly.');
       } else {
-        setError(err.message || 'Failed to sign in with Google. Please try again.');
+        setError(err.message || 'Failed to initiate Google Sign-In. Please try again.');
       }
-    } finally {
-      setLoading(false);
     }
   };
 
