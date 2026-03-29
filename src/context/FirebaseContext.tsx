@@ -35,39 +35,35 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return;
       }
 
-      // Fast profile fetch with getDoc instead of onSnapshot
+      // Set basic profile immediately from auth (INSTANT)
+      const basicProfile = {
+        uid: currentUser.uid,
+        email: currentUser.email,
+        displayName: currentUser.displayName,
+        photoURL: currentUser.photoURL,
+        isPremium: false,
+        role: ADMIN_EMAILS.includes(currentUser.email || '') ? 'admin' : 'user'
+      };
+      setUserProfile(basicProfile);
+      setLoading(false); // Stop loading immediately!
+
+      // Fetch full profile in background (non-blocking)
       try {
         const profileDoc = await getDoc(doc(db, 'users', currentUser.uid));
         
         if (profileDoc.exists()) {
-          setUserProfile(profileDoc.data());
+          setUserProfile({ ...basicProfile, ...profileDoc.data() });
         } else {
-          // Create profile quickly
-          const newProfile = {
-            uid: currentUser.uid,
-            email: currentUser.email,
-            displayName: currentUser.displayName,
-            photoURL: currentUser.photoURL,
-            isPremium: false,
+          // Create profile in background
+          setDoc(doc(db, 'users', currentUser.uid), {
+            ...basicProfile,
             createdAt: serverTimestamp(),
-            role: ADMIN_EMAILS.includes(currentUser.email || '') ? 'admin' : 'user'
-          };
-          await setDoc(doc(db, 'users', currentUser.uid), newProfile, { merge: true });
-          setUserProfile(newProfile);
+          }, { merge: true }).catch(console.error);
         }
       } catch (error) {
-        console.error("Error fetching user profile:", error);
-        // Set basic profile from auth to avoid blocking
-        setUserProfile({
-          uid: currentUser.uid,
-          email: currentUser.email,
-          displayName: currentUser.displayName,
-          photoURL: currentUser.photoURL,
-          isPremium: false
-        });
+        console.error("Firestore error (non-blocking):", error);
+        // Keep using basic profile - no blocking
       }
-      
-      setLoading(false);
     });
 
     return () => unsubscribeAuth();
