@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, GithubAuthProvider, signInWithPopup, signOut } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 // Firebase config from .env
@@ -20,11 +20,19 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 
 // Google provider
-const provider = new GoogleAuthProvider();
+const googleProvider = new GoogleAuthProvider();
 
-// Sign in with popup (more reliable than redirect on Vercel)
+// GitHub provider
+const githubProvider = new GithubAuthProvider();
+
+// Sign in with Google (popup - more reliable than redirect on Vercel)
 export const signInWithGoogle = () => {
-  return signInWithPopup(auth, provider);
+  return signInWithPopup(auth, googleProvider);
+};
+
+// Sign in with GitHub
+export const signInWithGithub = () => {
+  return signInWithPopup(auth, githubProvider);
 };
 
 // ✅ LOGOUT (IMPORTANT FIX)

@@ -1,16 +1,16 @@
 import { useState } from 'react';
-import { signInWithGoogle } from '../lib/firebase';
+import { signInWithGoogle, signInWithGithub } from '../lib/firebase';
 import { motion } from 'motion/react';
-import { Loader2, AlertCircle, BookOpen, Sparkles, Shield } from 'lucide-react';
+import { Loader2, AlertCircle, BookOpen, Sparkles, Shield, Github } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function Auth() {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<'google' | 'github' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const handleGoogleLogin = async () => {
-    setLoading(true);
+    setLoading('google');
     setError(null);
 
     try {
@@ -28,7 +28,32 @@ export default function Auth() {
         setError(err.message || 'Failed to sign in. Please try again.');
       }
     } finally {
-      setLoading(false);
+      setLoading(null);
+    }
+  };
+
+  const handleGithubLogin = async () => {
+    setLoading('github');
+    setError(null);
+
+    try {
+      const result = await signInWithGithub();
+      if (result.user) {
+        navigate('/dashboard');
+      }
+    } catch (err: any) {
+      console.error('GitHub login error:', err);
+      if (err.code === 'auth/popup-closed-by-user') {
+        setError('Sign-in cancelled. Please try again.');
+      } else if (err.code === 'auth/popup-blocked') {
+        setError('Popup blocked. Please allow popups for this site.');
+      } else if (err.code === 'auth/account-exists-with-different-credential') {
+        setError('An account already exists with this email. Try signing in with Google.');
+      } else {
+        setError(err.message || 'Failed to sign in with GitHub. Please try again.');
+      }
+    } finally {
+      setLoading(null);
     }
   };
 
@@ -48,9 +73,8 @@ export default function Auth() {
         transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
         className="absolute top-20 left-20 hidden lg:block"
       >
-        <div className="w-16 h-20 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg shadow-2xl transform rotate-12 perspective-1000"
+        <div className="w-16 h-20 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg shadow-2xl transform rotate-12"
           style={{ 
-            transformStyle: 'preserve-3d',
             boxShadow: '8px 8px 0 rgba(0,0,0,0.3), 16px 16px 30px rgba(0,0,0,0.4)'
           }}
         >
@@ -66,7 +90,6 @@ export default function Auth() {
       >
         <div className="w-20 h-24 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg shadow-2xl transform -rotate-12"
           style={{ 
-            transformStyle: 'preserve-3d',
             boxShadow: '-8px 8px 0 rgba(0,0,0,0.3), -16px 16px 30px rgba(0,0,0,0.4)'
           }}
         >
@@ -139,7 +162,7 @@ export default function Auth() {
               </p>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-4">
               {error && (
                 <motion.div 
                   initial={{ opacity: 0, y: -10 }}
@@ -151,9 +174,10 @@ export default function Auth() {
                 </motion.div>
               )}
 
+              {/* Google Button */}
               <motion.button 
                 onClick={handleGoogleLogin}
-                disabled={loading}
+                disabled={loading !== null}
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
                 className="w-full bg-white text-gray-900 py-4 rounded-2xl font-bold text-lg transition-all shadow-lg flex items-center justify-center gap-3 disabled:opacity-50 group relative overflow-hidden"
@@ -161,10 +185,9 @@ export default function Auth() {
                   boxShadow: '0 10px 30px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.5)'
                 }}
               >
-                {/* Shine effect */}
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
                 
-                {loading ? (
+                {loading === 'google' ? (
                   <>
                     <Loader2 className="h-6 w-6 animate-spin" />
                     <span>Connecting...</span>
@@ -181,6 +204,38 @@ export default function Auth() {
                   </>
                 )}
               </motion.button>
+
+              {/* GitHub Button */}
+              <motion.button 
+                onClick={handleGithubLogin}
+                disabled={loading !== null}
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full bg-gray-900 text-white py-4 rounded-2xl font-bold text-lg transition-all shadow-lg flex items-center justify-center gap-3 disabled:opacity-50 group relative overflow-hidden border border-white/10"
+                style={{
+                  boxShadow: '0 10px 30px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.1)'
+                }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                
+                {loading === 'github' ? (
+                  <>
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                    <span>Connecting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Github className="h-6 w-6" />
+                    <span>Continue with GitHub</span>
+                  </>
+                )}
+              </motion.button>
+
+              <div className="flex items-center gap-4 my-2">
+                <div className="flex-1 h-px bg-white/20" />
+                <span className="text-white/40 text-xs">or</span>
+                <div className="flex-1 h-px bg-white/20" />
+              </div>
 
               <p className="text-center text-xs text-white/40 px-4">
                 By continuing, you agree to our{' '}
@@ -202,7 +257,6 @@ export default function Auth() {
         {/* 3D Shadow */}
         <div 
           className="absolute -bottom-4 left-4 right-4 h-8 bg-black/30 rounded-3xl blur-xl -z-10"
-          style={{ transform: 'perspective(500px) rotateX(90deg)' }}
         />
       </motion.div>
     </div>

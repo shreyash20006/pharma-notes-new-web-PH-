@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useFirebase } from '../context/FirebaseContext';
 import { db } from '../lib/firebase';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { ShieldCheck, CheckCircle2, Zap, Loader2, AlertCircle, Star, Crown, Rocket, CreditCard } from 'lucide-react';
+import { ShieldCheck, CheckCircle2, Zap, AlertCircle, Star, Crown, Rocket, CreditCard, BookOpen, Sparkles } from 'lucide-react';
 import { motion } from 'motion/react';
 
 declare global {
@@ -12,6 +12,123 @@ declare global {
   }
 }
 
+// 3D Animated Loading Component
+const LoadingScreen = () => (
+  <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 overflow-hidden relative">
+    {/* Animated background */}
+    <div className="absolute inset-0 overflow-hidden">
+      <motion.div 
+        animate={{ scale: [1, 1.2, 1], opacity: [0.1, 0.2, 0.1] }}
+        transition={{ duration: 4, repeat: Infinity }}
+        className="absolute -top-40 -right-40 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl"
+      />
+      <motion.div 
+        animate={{ scale: [1, 1.3, 1], opacity: [0.1, 0.2, 0.1] }}
+        transition={{ duration: 5, repeat: Infinity, delay: 1 }}
+        className="absolute -bottom-40 -left-40 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl"
+      />
+    </div>
+
+    {/* 3D Floating Books */}
+    <div className="relative z-10 flex flex-col items-center">
+      <div className="relative mb-8">
+        {/* Center Book */}
+        <motion.div
+          animate={{ 
+            y: [-10, 10, -10],
+            rotateY: [0, 15, 0],
+            rotateX: [0, -5, 0]
+          }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+          className="relative"
+          style={{ transformStyle: 'preserve-3d', perspective: '1000px' }}
+        >
+          <div 
+            className="w-24 h-32 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl shadow-2xl flex items-center justify-center"
+            style={{
+              boxShadow: '0 20px 40px rgba(139, 92, 246, 0.5), 8px 8px 0 rgba(0,0,0,0.3)',
+              transform: 'rotateY(-10deg)'
+            }}
+          >
+            <BookOpen className="w-12 h-12 text-white/80" />
+            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent rounded-xl" />
+          </div>
+        </motion.div>
+
+        {/* Left Book */}
+        <motion.div
+          animate={{ 
+            y: [5, -5, 5],
+            rotateZ: [-15, -12, -15]
+          }}
+          transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute -left-16 top-4"
+        >
+          <div 
+            className="w-16 h-20 bg-gradient-to-br from-pink-400 to-pink-600 rounded-lg"
+            style={{
+              boxShadow: '-6px 6px 0 rgba(0,0,0,0.3), -12px 12px 25px rgba(0,0,0,0.4)'
+            }}
+          />
+        </motion.div>
+
+        {/* Right Book */}
+        <motion.div
+          animate={{ 
+            y: [-5, 5, -5],
+            rotateZ: [15, 12, 15]
+          }}
+          transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute -right-16 top-6"
+        >
+          <div 
+            className="w-14 h-18 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg"
+            style={{
+              boxShadow: '6px 6px 0 rgba(0,0,0,0.3), 12px 12px 25px rgba(0,0,0,0.4)'
+            }}
+          />
+        </motion.div>
+
+        {/* Sparkles */}
+        <motion.div
+          animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+          className="absolute -top-4 -right-4"
+        >
+          <Sparkles className="w-8 h-8 text-yellow-400" />
+        </motion.div>
+      </div>
+
+      {/* Loading text */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center"
+      >
+        <h2 className="text-2xl font-bold text-white mb-3">Loading Premium</h2>
+        <div className="flex items-center justify-center gap-2">
+          <motion.div
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
+            className="w-3 h-3 bg-purple-400 rounded-full"
+          />
+          <motion.div
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
+            className="w-3 h-3 bg-pink-400 rounded-full"
+          />
+          <motion.div
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }}
+            className="w-3 h-3 bg-blue-400 rounded-full"
+          />
+        </div>
+        <p className="text-white/50 text-sm mt-4">Preparing your subscription details...</p>
+      </motion.div>
+    </div>
+  </div>
+);
+
 export default function Premium() {
   const { user, userProfile, loading: authLoading, isAuthReady } = useFirebase();
   const [loading, setLoading] = useState(false);
@@ -19,12 +136,7 @@ export default function Premium() {
   const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'cashfree'>('razorpay');
 
   if (authLoading || !isAuthReady) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-surface text-on-surface-variant">
-        <Loader2 className="h-12 w-12 animate-spin mb-4 text-primary" />
-        <p className="font-medium">Loading subscription details...</p>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   const handleRazorpayPayment = async () => {
