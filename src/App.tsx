@@ -9,6 +9,9 @@ import Dashboard from './pages/Dashboard';
 import Premium from './pages/Premium';
 import Upload from './pages/Upload';
 import Auth from './pages/Auth';
+import Contact from './pages/Contact';
+import Terms from './pages/Terms';
+import Refunds from './pages/Refunds';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import Logo from './components/Logo';
@@ -57,6 +60,9 @@ export default function App() {
             <Route path="/premium" element={<Premium />} />
             <Route path="/upload" element={<Upload />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/refunds" element={<Refunds />} />
           </Routes>
         </main>
         <Footer />

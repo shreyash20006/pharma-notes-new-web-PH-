@@ -37,9 +37,9 @@ export default function Footer() {
             <h3 className="text-sm font-headline font-bold text-on-surface uppercase tracking-wider mb-6">Support</h3>
             <ul className="space-y-4">
               <li><a href="#" className="text-on-surface-variant hover:text-primary text-sm transition-colors">FAQ</a></li>
-              <li><a href="#" className="text-on-surface-variant hover:text-primary text-sm transition-colors">Contact Us</a></li>
-              <li><a href="#" className="text-on-surface-variant hover:text-primary text-sm transition-colors">Privacy Policy</a></li>
-              <li><a href="#" className="text-on-surface-variant hover:text-primary text-sm transition-colors">Terms of Service</a></li>
+              <li><Link to="/contact" className="text-on-surface-variant hover:text-primary text-sm transition-colors">Contact Us</Link></li>
+              <li><Link to="/refunds" className="text-on-surface-variant hover:text-primary text-sm transition-colors">Refunds & Cancellations</Link></li>
+              <li><Link to="/terms" className="text-on-surface-variant hover:text-primary text-sm transition-colors">Terms & Conditions</Link></li>
             </ul>
           </div>
 
