@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useFirebase } from '../context/FirebaseContext';
 import { db } from '../lib/firebase';
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { ShieldCheck, CheckCircle2, Zap, AlertCircle, Star, Crown, Rocket, CreditCard, BookOpen, Sparkles } from 'lucide-react';
+import { doc, updateDoc, serverTimestamp, getDoc, collection, query, where, getDocs, increment } from 'firebase/firestore';
+import { ShieldCheck, CheckCircle2, Zap, AlertCircle, Star, Crown, Rocket, CreditCard, BookOpen, Sparkles, Tag, X } from 'lucide-react';
 import { motion } from 'motion/react';
 
 declare global {
@@ -134,6 +134,75 @@ export default function Premium() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'cashfree'>('razorpay');
+  
+  // Price and coupon states
+  const [basePrice, setBasePrice] = useState(499);
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+  const [couponError, setCouponError] = useState('');
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
+
+  // Calculate final price
+  const finalPrice = appliedCoupon 
+    ? appliedCoupon.type === 'percent' 
+      ? Math.round(basePrice * (1 - appliedCoupon.discount / 100))
+      : Math.max(0, basePrice - appliedCoupon.discount)
+    : basePrice;
+
+  // Fetch price from Firestore
+  useEffect(() => {
+    const fetchPrice = async () => {
+      try {
+        const settingsDoc = await getDoc(doc(db, 'settings', 'pricing'));
+        if (settingsDoc.exists()) {
+          setBasePrice(settingsDoc.data().premiumPrice || 499);
+        }
+      } catch (error) {
+        console.error('Error fetching price:', error);
+      }
+    };
+    fetchPrice();
+  }, []);
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    
+    setApplyingCoupon(true);
+    setCouponError('');
+    
+    try {
+      const q = query(
+        collection(db, 'coupons'),
+        where('code', '==', couponCode.toUpperCase()),
+        where('active', '==', true)
+      );
+      const snapshot = await getDocs(q);
+      
+      if (snapshot.empty) {
+        setCouponError('Invalid coupon code');
+        setAppliedCoupon(null);
+      } else {
+        const couponData = snapshot.docs[0].data();
+        if (couponData.usedCount >= couponData.maxUses) {
+          setCouponError('Coupon usage limit reached');
+          setAppliedCoupon(null);
+        } else {
+          setAppliedCoupon({ id: snapshot.docs[0].id, ...couponData });
+          setCouponError('');
+        }
+      }
+    } catch (error) {
+      console.error('Error applying coupon:', error);
+      setCouponError('Error applying coupon');
+    }
+    setApplyingCoupon(false);
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode('');
+    setCouponError('');
+  };
 
   if (authLoading || !isAuthReady) {
     return <LoadingScreen />;
@@ -147,11 +216,11 @@ export default function Premium() {
 
       setError('');
       
-      // 1. Create order on server
+      // 1. Create order on server with final price
       const response = await fetch('/api/razorpay/order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: 499 }) // ₹499
+        body: JSON.stringify({ amount: finalPrice })
       });
 
       if (!response.ok) {
@@ -244,7 +313,7 @@ export default function Premium() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: 499,
+          amount: finalPrice,
           customerId: user!.uid,
           customerPhone: userProfile?.phone || "9999999999",
           customerEmail: user!.email
@@ -384,12 +453,53 @@ export default function Premium() {
               <p className="text-on-surface-variant font-body text-sm">Full-spectrum archival & analysis suite.</p>
             </div>
 
-            <div className="mb-10">
-              <div className="flex items-baseline gap-1">
-                <span className="text-5xl font-headline font-extrabold text-on-surface">₹499</span>
+            <div className="mb-8">
+              <div className="flex items-baseline gap-2">
+                {appliedCoupon && (
+                  <span className="text-3xl font-headline font-extrabold text-on-surface-variant line-through">₹{basePrice}</span>
+                )}
+                <span className="text-5xl font-headline font-extrabold text-primary">₹{finalPrice}</span>
                 <span className="text-on-surface-variant font-label text-xs uppercase tracking-widest font-bold">/ One-Time</span>
               </div>
+              {appliedCoupon && (
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="text-sm text-emerald-500 font-bold">
+                    {appliedCoupon.type === 'percent' ? `${appliedCoupon.discount}% OFF` : `₹${appliedCoupon.discount} OFF`} Applied!
+                  </span>
+                  <button onClick={removeCoupon} className="text-red-400 hover:text-red-300">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
             </div>
+
+            {/* Coupon Code Input */}
+            {!appliedCoupon && (
+              <div className="mb-8">
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" />
+                    <input
+                      type="text"
+                      placeholder="Coupon code"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                      className="w-full pl-10 pr-4 py-3 bg-surface-container-high rounded-xl border border-outline-variant text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:border-primary uppercase"
+                    />
+                  </div>
+                  <button
+                    onClick={handleApplyCoupon}
+                    disabled={applyingCoupon || !couponCode.trim()}
+                    className="px-6 py-3 bg-primary text-white rounded-xl font-bold disabled:opacity-50"
+                  >
+                    {applyingCoupon ? '...' : 'Apply'}
+                  </button>
+                </div>
+                {couponError && (
+                  <p className="text-red-400 text-sm mt-2">{couponError}</p>
+                )}
+              </div>
+            )}
 
             <ul className="space-y-5 mb-12 flex-grow">
               {[

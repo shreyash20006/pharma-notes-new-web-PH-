@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useFirebase } from '../context/FirebaseContext';
 import { db } from '../lib/firebase';
-import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp, query } from 'firebase/firestore';
+import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp, query, getDoc, setDoc } from 'firebase/firestore';
 import { motion } from 'motion/react';
-import { Plus, Trash2, BookOpen, Shield, Eye, Search, Check, X, Clock } from 'lucide-react';
+import { Plus, Trash2, BookOpen, Shield, Eye, Search, Check, X, Clock, Settings, Tag, IndianRupee, Percent } from 'lucide-react';
 import { Navigate, Link } from 'react-router-dom';
 
 interface Note {
@@ -26,6 +26,17 @@ interface Note {
   price?: number;
 }
 
+interface Coupon {
+  id: string;
+  code: string;
+  discount: number;
+  type: 'percent' | 'flat';
+  maxUses: number;
+  usedCount: number;
+  active: boolean;
+  expiresAt?: any;
+}
+
 const CATEGORIES = [
   { id: 'btech', name: 'B.Tech', branches: ['CSE', 'IT', 'ECE', 'EE', 'ME', 'Civil', 'Chemical'] },
   { id: 'bpharma', name: 'B.Pharma', branches: ['General'] },
@@ -39,13 +50,27 @@ export default function Admin() {
   const { user, isAdmin, loading } = useFirebase();
   const [notes, setNotes] = useState<Note[]>([]);
   const [pendingNotes, setPendingNotes] = useState<Note[]>([]);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'all' | 'pending'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'settings'>('all');
   const [editingPrice, setEditingPrice] = useState<string | null>(null);
   const [priceInput, setPriceInput] = useState('');
+  
+  // Settings state
+  const [premiumPrice, setPremiumPrice] = useState(499);
+  const [savingSettings, setSavingSettings] = useState(false);
+  
+  // Coupon form
+  const [showCouponForm, setShowCouponForm] = useState(false);
+  const [couponForm, setCouponForm] = useState({
+    code: '',
+    discount: 10,
+    type: 'percent' as 'percent' | 'flat',
+    maxUses: 100,
+  });
   
   const [form, setForm] = useState({
     title: '',
@@ -62,8 +87,94 @@ export default function Admin() {
   useEffect(() => {
     if (isAdmin) {
       fetchNotes();
+      fetchSettings();
+      fetchCoupons();
     }
   }, [isAdmin]);
+
+  const fetchSettings = async () => {
+    try {
+      const settingsDoc = await getDoc(doc(db, 'settings', 'pricing'));
+      if (settingsDoc.exists()) {
+        setPremiumPrice(settingsDoc.data().premiumPrice || 499);
+      }
+    } catch (error) {
+      console.error('Error fetching settings:', error);
+    }
+  };
+
+  const fetchCoupons = async () => {
+    try {
+      const snapshot = await getDocs(collection(db, 'coupons'));
+      const couponsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Coupon[];
+      setCoupons(couponsData);
+    } catch (error) {
+      console.error('Error fetching coupons:', error);
+    }
+  };
+
+  const handleSaveSettings = async () => {
+    setSavingSettings(true);
+    try {
+      await setDoc(doc(db, 'settings', 'pricing'), {
+        premiumPrice: premiumPrice,
+        updatedAt: serverTimestamp()
+      });
+      setError(null);
+    } catch (err: any) {
+      console.error('Error saving settings:', err);
+      setError('Failed to save settings');
+    }
+    setSavingSettings(false);
+  };
+
+  const handleCreateCoupon = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!couponForm.code) return;
+    
+    setSaving(true);
+    try {
+      await addDoc(collection(db, 'coupons'), {
+        code: couponForm.code.toUpperCase(),
+        discount: couponForm.discount,
+        type: couponForm.type,
+        maxUses: couponForm.maxUses,
+        usedCount: 0,
+        active: true,
+        createdAt: serverTimestamp()
+      });
+      setCouponForm({ code: '', discount: 10, type: 'percent', maxUses: 100 });
+      setShowCouponForm(false);
+      fetchCoupons();
+    } catch (error) {
+      console.error('Error creating coupon:', error);
+    }
+    setSaving(false);
+  };
+
+  const handleDeleteCoupon = async (couponId: string) => {
+    if (!confirm('Delete this coupon?')) return;
+    try {
+      await deleteDoc(doc(db, 'coupons', couponId));
+      fetchCoupons();
+    } catch (error) {
+      console.error('Error deleting coupon:', error);
+    }
+  };
+
+  const handleToggleCoupon = async (couponId: string, currentActive: boolean) => {
+    try {
+      await updateDoc(doc(db, 'coupons', couponId), {
+        active: !currentActive
+      });
+      fetchCoupons();
+    } catch (error) {
+      console.error('Error toggling coupon:', error);
+    }
+  };
 
   const fetchNotes = async () => {
     try {
@@ -397,7 +508,7 @@ export default function Admin() {
         )}
 
         {/* Tabs */}
-        <div className="flex gap-4 mb-6">
+        <div className="flex gap-4 mb-6 flex-wrap">
           <button
             onClick={() => setActiveTab('all')}
             className={`px-6 py-3 rounded-xl font-bold transition-all ${
@@ -417,21 +528,222 @@ export default function Admin() {
             }`}
           >
             <Clock className="w-4 h-4" />
-            Pending Approval ({pendingNotes.length})
+            Pending ({pendingNotes.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 ${
+              activeTab === 'settings' 
+                ? 'bg-green-500 text-white' 
+                : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+            }`}
+          >
+            <Settings className="w-4 h-4" />
+            Price & Coupons
           </button>
         </div>
 
-        {/* Search */}
-        <div className="relative mb-6">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search notes..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-gray-800 border border-gray-700 rounded-xl pl-12 pr-4 py-3 text-white focus:outline-none focus:border-purple-500"
-          />
-        </div>
+        {/* Settings Tab */}
+        {activeTab === 'settings' && (
+          <div className="space-y-8">
+            {/* Premium Price Settings */}
+            <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-green-500/20 rounded-xl flex items-center justify-center">
+                  <IndianRupee className="w-5 h-5 text-green-400" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white">Premium Subscription Price</h2>
+                  <p className="text-gray-400 text-sm">Set the price for NotesDrive Pro subscription</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <div className="relative flex-1 max-w-xs">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl">₹</span>
+                  <input
+                    type="number"
+                    value={premiumPrice}
+                    onChange={(e) => setPremiumPrice(parseInt(e.target.value) || 0)}
+                    className="w-full bg-gray-700 border border-gray-600 rounded-xl pl-10 pr-4 py-4 text-white text-2xl font-bold focus:outline-none focus:border-green-500"
+                    min="0"
+                  />
+                </div>
+                <button
+                  onClick={handleSaveSettings}
+                  disabled={savingSettings}
+                  className="bg-green-500 text-white px-8 py-4 rounded-xl font-bold hover:bg-green-600 disabled:opacity-50"
+                >
+                  {savingSettings ? 'Saving...' : 'Save Price'}
+                </button>
+              </div>
+              
+              <div className="flex gap-2 mt-4">
+                {[99, 199, 299, 499, 999].map(price => (
+                  <button
+                    key={price}
+                    onClick={() => setPremiumPrice(price)}
+                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                      premiumPrice === price
+                        ? 'bg-green-500 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    ₹{price}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Coupon Codes */}
+            <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-purple-500/20 rounded-xl flex items-center justify-center">
+                    <Tag className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">Coupon Codes</h2>
+                    <p className="text-gray-400 text-sm">Create discount codes for customers</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowCouponForm(!showCouponForm)}
+                  className="flex items-center gap-2 bg-purple-500 text-white px-4 py-2 rounded-xl font-bold"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Coupon
+                </button>
+              </div>
+
+              {/* Coupon Form */}
+              {showCouponForm && (
+                <form onSubmit={handleCreateCoupon} className="bg-gray-700/50 rounded-xl p-4 mb-6">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                      <label className="block text-gray-300 text-xs mb-1">Code</label>
+                      <input
+                        type="text"
+                        value={couponForm.code}
+                        onChange={(e) => setCouponForm({ ...couponForm, code: e.target.value.toUpperCase() })}
+                        className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white uppercase"
+                        placeholder="SAVE20"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-300 text-xs mb-1">Discount</label>
+                      <input
+                        type="number"
+                        value={couponForm.discount}
+                        onChange={(e) => setCouponForm({ ...couponForm, discount: parseInt(e.target.value) || 0 })}
+                        className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
+                        min="1"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-300 text-xs mb-1">Type</label>
+                      <select
+                        value={couponForm.type}
+                        onChange={(e) => setCouponForm({ ...couponForm, type: e.target.value as 'percent' | 'flat' })}
+                        className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
+                      >
+                        <option value="percent">% Off</option>
+                        <option value="flat">₹ Off</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-gray-300 text-xs mb-1">Max Uses</label>
+                      <input
+                        type="number"
+                        value={couponForm.maxUses}
+                        onChange={(e) => setCouponForm({ ...couponForm, maxUses: parseInt(e.target.value) || 1 })}
+                        className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
+                        min="1"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2 mt-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowCouponForm(false)}
+                      className="px-4 py-2 bg-gray-600 text-gray-300 rounded-lg"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={saving}
+                      className="px-4 py-2 bg-purple-500 text-white rounded-lg font-bold"
+                    >
+                      Create Coupon
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* Coupons List */}
+              {coupons.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  No coupons created yet
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {coupons.map((coupon) => (
+                    <div key={coupon.id} className="flex items-center justify-between bg-gray-700/50 rounded-xl p-4">
+                      <div className="flex items-center gap-4">
+                        <code className="px-3 py-1 bg-purple-500/20 text-purple-400 rounded-lg font-bold text-lg">
+                          {coupon.code}
+                        </code>
+                        <div>
+                          <span className="text-white font-bold">
+                            {coupon.type === 'percent' ? `${coupon.discount}% OFF` : `₹${coupon.discount} OFF`}
+                          </span>
+                          <p className="text-gray-400 text-xs">
+                            Used: {coupon.usedCount || 0} / {coupon.maxUses}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleToggleCoupon(coupon.id, coupon.active)}
+                          className={`px-3 py-1 rounded-lg text-xs font-bold ${
+                            coupon.active
+                              ? 'bg-green-500/20 text-green-400'
+                              : 'bg-red-500/20 text-red-400'
+                          }`}
+                        >
+                          {coupon.active ? 'Active' : 'Disabled'}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCoupon(coupon.id)}
+                          className="p-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Notes Section - Only show when not on settings tab */}
+        {activeTab !== 'settings' && (
+          <>
+            {/* Search */}
+            <div className="relative mb-6">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search notes..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-xl pl-12 pr-4 py-3 text-white focus:outline-none focus:border-purple-500"
+              />
+            </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -574,6 +886,8 @@ export default function Admin() {
             </div>
           )}
         </div>
+        </>
+        )}
       </div>
     </div>
   );
