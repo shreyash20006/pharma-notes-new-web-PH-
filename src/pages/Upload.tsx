@@ -80,27 +80,24 @@ export default function Upload() {
     setUploading(true);
     setError(null);
 
-    // Timeout for slow connections
-    const timeoutId = setTimeout(() => {
-      setUploading(false);
-      setError('Upload timed out. Please check your internet connection and try again. Make sure Firestore rules are configured properly.');
-    }, 15000);
-
     try {
-      await addDoc(collection(db, 'notes'), {
+      console.log('Starting upload to Firestore...');
+      console.log('User:', user.uid);
+      
+      const docRef = await addDoc(collection(db, 'notes'), {
         ...form,
         uploadedBy: user.uid,
         uploaderName: user.displayName || user.email?.split('@')[0],
         uploaderEmail: user.email,
         uploaderPhoto: user.photoURL,
         createdAt: serverTimestamp(),
-        status: 'pending', // Requires admin approval
+        status: 'pending',
         views: 0,
         downloads: 0,
-        isPremium: false, // User uploads are free, admin can change
+        isPremium: false,
       });
 
-      clearTimeout(timeoutId);
+      console.log('Upload successful! Doc ID:', docRef.id);
       setSuccess(true);
       setForm({
         title: '',
@@ -112,15 +109,20 @@ export default function Upload() {
         driveLink: '',
       });
     } catch (err: any) {
-      clearTimeout(timeoutId);
-      console.error('Upload error:', err);
+      console.error('Upload error details:', err);
+      console.error('Error code:', err.code);
+      console.error('Error message:', err.message);
+      
       if (err.code === 'permission-denied') {
-        setError('Permission denied. Admin needs to update Firestore security rules in Firebase Console.');
+        setError('Permission denied. Make sure Firestore rules are published: allow read, write: if request.auth != null;');
+      } else if (err.code === 'unavailable') {
+        setError('Firestore unavailable. Check internet connection.');
       } else {
-        setError(err.message || 'Failed to upload. Please try again.');
+        setError(`Error: ${err.code || 'unknown'} - ${err.message || 'Upload failed'}`);
       }
+    } finally {
+      setUploading(false);
     }
-    setUploading(false);
   };
 
   // Loading state
