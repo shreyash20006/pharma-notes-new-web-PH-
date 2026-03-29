@@ -30,7 +30,7 @@ export default function Contact() {
               </div>
               <div>
                 <h3 className="font-headline font-bold text-on-surface mb-1">Email</h3>
-                <p className="text-on-surface-variant">support@notesdrive.shop</p>
+                <p className="text-on-surface-variant">notesdriveshop@gmail.com</p>
                 <p className="text-on-surface-variant text-sm mt-1">We respond within 24 hours</p>
               </div>
             </div>
@@ -41,7 +41,7 @@ export default function Contact() {
               </div>
               <div>
                 <h3 className="font-headline font-bold text-on-surface mb-1">Phone</h3>
-                <p className="text-on-surface-variant">+91 9876543210</p>
+                <p className="text-on-surface-variant">+91 8668301185</p>
                 <p className="text-on-surface-variant text-sm mt-1">Mon-Sat, 10 AM - 6 PM IST</p>
               </div>
             </div>
@@ -54,8 +54,9 @@ export default function Contact() {
                 <h3 className="font-headline font-bold text-on-surface mb-1">Address</h3>
                 <p className="text-on-surface-variant">
                   NotesDrive<br />
-                  Mumbai, Maharashtra<br />
-                  India - 400001
+                  Jaihind Housing Society,<br />
+                  Shyam Nagar, Somalwada,<br />
+                  Nagpur, Maharashtra, India
                 </p>
               </div>
             </div>
