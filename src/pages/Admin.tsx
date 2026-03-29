@@ -121,6 +121,17 @@ export default function Admin() {
     setSaving(false);
   };
 
+  const handleTogglePremium = async (noteId: string, currentStatus: boolean) => {
+    try {
+      await updateDoc(doc(db, 'notes', noteId), {
+        isPremium: !currentStatus
+      });
+      fetchNotes();
+    } catch (error) {
+      console.error('Error toggling premium:', error);
+    }
+  };
+
   const handleApprove = async (noteId: string) => {
     try {
       await updateDoc(doc(db, 'notes', noteId), {
@@ -436,11 +447,17 @@ export default function Admin() {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-gray-400 text-xs uppercase">{note.category}</span>
-                      {note.isPremium ? (
-                        <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded-full">Premium</span>
-                      ) : (
-                        <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full">Free</span>
-                      )}
+                      <button
+                        onClick={() => handleTogglePremium(note.id, note.isPremium || false)}
+                        className={`px-3 py-1 text-xs rounded-full font-bold transition-all ${
+                          note.isPremium 
+                            ? 'bg-purple-500/20 text-purple-400 hover:bg-purple-500/30' 
+                            : 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                        }`}
+                        title={note.isPremium ? 'Click to make Free' : 'Click to make Premium'}
+                      >
+                        {note.isPremium ? '💎 Premium' : '🆓 Free'}
+                      </button>
                     </div>
                     <div className="flex gap-2">
                       {activeTab === 'pending' ? (
