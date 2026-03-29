@@ -12,6 +12,7 @@ import Auth from './pages/Auth';
 import Contact from './pages/Contact';
 import Terms from './pages/Terms';
 import Refunds from './pages/Refunds';
+import Admin from './pages/Admin';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import Logo from './components/Logo';
@@ -63,6 +64,7 @@ export default function App() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/refunds" element={<Refunds />} />
+            <Route path="/admin" element={<Admin />} />
           </Routes>
         </main>
         <Footer />
