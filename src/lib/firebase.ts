@@ -1,7 +1,8 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithRedirect } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, signInWithRedirect, signOut } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
+// Firebase config from .env
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -11,13 +12,22 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
+// Services
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
+// Google provider
 const provider = new GoogleAuthProvider();
 
+// Sign in
 export const signInWithGoogle = () => {
   return signInWithRedirect(auth, provider);
+};
+
+// ✅ LOGOUT (IMPORTANT FIX)
+export const logout = () => {
+  return signOut(auth);
 };
