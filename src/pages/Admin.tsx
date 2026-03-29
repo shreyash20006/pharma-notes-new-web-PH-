@@ -33,11 +33,12 @@ const UNIVERSITIES = ['RTMNU', 'DBATU', 'Other'];
 const SEMESTERS = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'];
 
 export default function Admin() {
-  const { user, isAdmin, loading: authLoading } = useFirebase();
+  const { user, isAdmin, loading } = useFirebase();
   const [notes, setNotes] = useState<Note[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [error, setError] = useState<string | null>(null);
   
   // Form state
   const [form, setForm] = useState({
@@ -73,9 +74,13 @@ export default function Admin() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.title || !form.driveLink) return;
+    if (!form.title || !form.driveLink) {
+      setError('Title and Drive Link are required');
+      return;
+    }
 
-    setLoading(true);
+    setSaving(true);
+    setError(null);
     try {
       await addDoc(collection(db, 'notes'), {
         ...form,
@@ -99,10 +104,11 @@ export default function Admin() {
       });
       setShowForm(false);
       fetchNotes();
-    } catch (error) {
-      console.error('Error adding note:', error);
+    } catch (err: any) {
+      console.error('Error adding note:', err);
+      setError(err.message || 'Failed to add note');
     }
-    setLoading(false);
+    setSaving(false);
   };
 
   const handleDelete = async (noteId: string) => {
@@ -117,7 +123,7 @@ export default function Admin() {
   };
 
   // Redirect non-admin users
-  if (authLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-900">
         <div className="animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full" />
@@ -125,8 +131,20 @@ export default function Admin() {
     );
   }
 
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
   if (!isAdmin) {
-    return <Navigate to="/" replace />;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-white mb-4">Access Denied</h1>
+          <p className="text-gray-400 mb-4">You don't have admin access.</p>
+          <p className="text-gray-500 text-sm">Logged in as: {user.email}</p>
+        </div>
+      </div>
+    );
   }
 
   const filteredNotes = notes.filter(note => 
@@ -169,6 +187,13 @@ export default function Admin() {
             className="bg-gray-800 rounded-2xl p-6 mb-8 border border-gray-700"
           >
             <h2 className="text-xl font-bold text-white mb-6">Add New eBook/Note</h2>
+            
+            {error && (
+              <div className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-xl text-red-300">
+                {error}
+              </div>
+            )}
+            
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="md:col-span-2">
                 <label className="block text-gray-300 text-sm mb-2">Title *</label>
@@ -280,10 +305,10 @@ export default function Admin() {
                 </button>
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={saving}
                   className="flex-1 bg-purple-500 text-white px-6 py-3 rounded-xl font-bold disabled:opacity-50"
                 >
-                  {loading ? 'Adding...' : 'Add Note'}
+                  {saving ? 'Adding...' : 'Add Note'}
                 </button>
               </div>
             </form>

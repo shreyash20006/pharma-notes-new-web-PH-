@@ -106,7 +106,11 @@ export default function Upload() {
       });
     } catch (err: any) {
       console.error('Upload error:', err);
-      setError(err.message || 'Failed to upload. Please try again.');
+      if (err.code === 'permission-denied') {
+        setError('Permission denied. Please contact admin to enable uploads.');
+      } else {
+        setError(err.message || 'Failed to upload. Please try again.');
+      }
     }
     setUploading(false);
   };
