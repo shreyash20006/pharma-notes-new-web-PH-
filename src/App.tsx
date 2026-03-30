@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
+import HomeNew from './pages/HomeNew';
 import Notes from './pages/Notes';
 import Summarizer from './pages/Summarizer';
 import Quiz from './pages/Quiz';
@@ -54,6 +55,7 @@ export default function App() {
         <main className="flex-grow">
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/home-new" element={<HomeNew />} />
             <Route path="/notes" element={<Notes />} />
             <Route path="/summarizer" element={<Summarizer />} />
             <Route path="/quiz" element={<Quiz />} />
