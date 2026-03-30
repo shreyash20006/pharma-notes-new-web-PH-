@@ -65,9 +65,6 @@ export default function CompleteHomepage() {
       {/* FEATURES GRID */}
       <FeaturesGrid />
 
-      {/* SUBJECTS PREVIEW */}
-      <SubjectsPreview selectedStream={selectedStream} setSelectedStream={setSelectedStream} />
-
       {/* UNIVERSITY STRIP */}
       <UniversityStrip />
 
