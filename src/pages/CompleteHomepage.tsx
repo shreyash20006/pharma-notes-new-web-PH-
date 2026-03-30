@@ -71,9 +71,6 @@ export default function CompleteHomepage() {
       {/* UNIVERSITY STRIP */}
       <UniversityStrip />
 
-      {/* PRICING STRIP */}
-      <PricingStrip />
-
       {/* FOOTER */}
       <Footer />
 
