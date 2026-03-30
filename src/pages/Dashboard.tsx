@@ -135,16 +135,28 @@ export default function Dashboard() {
         </div>
 
         <nav className="flex-1 px-4 space-y-1">
-          <SidebarLink icon={<LayoutDashboard className="w-5 h-5" />} label="Dashboard" active />
-          <SidebarLink icon={<FileText className="w-5 h-5" />} label="My Notes" />
-          <SidebarLink icon={<BarChart3 className="w-5 h-5" />} label="Analytics" />
-          <SidebarLink icon={<Settings className="w-5 h-5" />} label="Settings" />
+          <Link to="/dashboard" className="flex items-center gap-3 px-4 py-3 text-primary bg-primary-container rounded-xl font-bold">
+            <LayoutDashboard className="w-5 h-5" />
+            <span>Dashboard</span>
+          </Link>
+          <Link to="/notes" className="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low hover:text-primary rounded-xl transition-colors font-medium">
+            <FileText className="w-5 h-5" />
+            <span>My Notes</span>
+          </Link>
+          <Link to="/dashboard" className="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low hover:text-primary rounded-xl transition-colors font-medium">
+            <BarChart3 className="w-5 h-5" />
+            <span>Analytics</span>
+          </Link>
+          <Link to="/dashboard" className="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low hover:text-primary rounded-xl transition-colors font-medium">
+            <Settings className="w-5 h-5" />
+            <span>Settings</span>
+          </Link>
           
           {/* Admin Panel Link - Only for admins */}
           {isAdmin && (
             <Link
               to="/admin"
-              className="flex items-center gap-3 px-4 py-3 text-white bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl font-bold mt-4 hover:shadow-lg transition-all"
+              className="flex items-center gap-3 px-4 py-3 text-white bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl font-bold mt-4 hover:shadow-lg transition-all hover:scale-105 transform"
             >
               <ShieldCheck className="w-5 h-5" />
               <span>Admin Panel</span>
@@ -205,13 +217,26 @@ export default function Dashboard() {
               <h1 className="text-3xl font-headline font-bold text-on-surface">Welcome back, {userName}!</h1>
               <p className="text-on-surface-variant mt-1">Here's what's happening with your notes today.</p>
             </div>
-            <button 
+            <motion.button 
               onClick={() => navigate('/upload')}
-              className="bg-primary text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:shadow-lg hover:shadow-primary/20 transition-all transform hover:-translate-y-0.5"
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.95 }}
+              className="bg-gradient-to-r from-primary to-purple-600 text-white px-8 py-4 rounded-2xl font-bold flex items-center gap-2 hover:shadow-2xl hover:shadow-primary/40 transition-all transform relative overflow-hidden group"
             >
-              <Plus className="w-5 h-5" />
-              <span>Quick Upload</span>
-            </button>
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-r from-purple-600 to-primary opacity-0 group-hover:opacity-100 transition-opacity"
+                animate={{
+                  x: ['-100%', '100%'],
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  ease: 'linear'
+                }}
+              />
+              <Plus className="w-5 h-5 relative z-10" />
+              <span className="relative z-10">Quick Upload</span>
+            </motion.button>
           </div>
 
           <AnimatePresence>
@@ -346,16 +371,53 @@ function SidebarLink({ icon, label, active = false }: { icon: React.ReactNode, l
 
 function StatCard({ label, value, trend, icon }: { label: string, value: string, trend: string, icon: React.ReactNode }) {
   return (
-    <div className="bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant hover:border-primary/30 transition-all group">
-      <div className="flex items-center justify-between mb-4">
-        <div className="p-2.5 bg-surface-container-low rounded-xl group-hover:bg-primary/10 transition-colors">
-          {icon}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ 
+        y: -8,
+        scale: 1.02,
+        rotateX: 5,
+        rotateY: 5,
+        transition: { duration: 0.2 }
+      }}
+      style={{ transformStyle: 'preserve-3d' }}
+      className="bg-gradient-to-br from-surface-container-lowest to-surface-container-low p-6 rounded-3xl border border-outline-variant hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/20 transition-all group relative overflow-hidden"
+    >
+      {/* Animated Background Gradient */}
+      <motion.div
+        className="absolute inset-0 bg-gradient-to-br from-primary/5 via-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+        animate={{
+          backgroundPosition: ['0% 0%', '100% 100%'],
+        }}
+        transition={{
+          duration: 3,
+          repeat: Infinity,
+          repeatType: 'reverse'
+        }}
+      />
+      
+      <div className="relative z-10">
+        <div className="flex items-center justify-between mb-4">
+          <motion.div
+            whileHover={{ rotate: 360, scale: 1.1 }}
+            transition={{ duration: 0.5 }}
+            className="p-3 bg-gradient-to-br from-primary/20 to-purple-500/20 rounded-2xl group-hover:from-primary/30 group-hover:to-purple-500/30 transition-all shadow-lg"
+          >
+            {icon}
+          </motion.div>
+          <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full shadow-sm">{trend}</span>
         </div>
-        <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">{trend}</span>
+        <p className="text-on-surface-variant text-sm font-semibold mb-1">{label}</p>
+        <motion.p
+          initial={{ scale: 0.8 }}
+          animate={{ scale: 1 }}
+          className="text-3xl font-headline font-extrabold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent"
+        >
+          {value}
+        </motion.p>
       </div>
-      <p className="text-on-surface-variant text-sm font-medium">{label}</p>
-      <p className="text-2xl font-headline font-bold text-on-surface mt-1">{value}</p>
-    </div>
+    </motion.div>
   );
 }
 

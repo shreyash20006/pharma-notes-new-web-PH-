@@ -37,30 +37,60 @@ export default function NoteCard({ note, isPremium, onUnlock }: NoteCardProps) {
   return (
     <motion.div 
       initial={{ opacity: 0, scale: 0.95 }}
-      whileHover={{ y: -5 }}
+      whileHover={{ 
+        y: -8,
+        scale: 1.02,
+        rotateX: 2,
+        rotateY: 2,
+        transition: { duration: 0.3 }
+      }}
       animate={{ opacity: 1, scale: 1 }}
-      className="bg-surface-container-lowest rounded-[2rem] border border-outline-variant shadow-sm hover:shadow-2xl hover:shadow-primary/5 transition-all overflow-hidden group relative"
+      style={{ transformStyle: 'preserve-3d' }}
+      className="bg-gradient-to-br from-surface-container-lowest to-surface-container-low rounded-[2rem] border border-outline-variant shadow-lg hover:shadow-2xl hover:shadow-primary/20 hover:border-primary/50 transition-all overflow-hidden group relative"
     >
+      {/* Animated Background Glow */}
+      <motion.div
+        className="absolute inset-0 bg-gradient-to-br from-primary/5 via-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+        animate={{
+          backgroundPosition: ['0% 0%', '100% 100%'],
+        }}
+        transition={{
+          duration: 3,
+          repeat: Infinity,
+          repeatType: 'reverse'
+        }}
+      />
+      
       {/* Premium Badge */}
       {isNotePremium && (
-        <div className="absolute top-4 right-4 z-10">
+        <motion.div 
+          className="absolute top-4 right-4 z-10"
+          whileHover={{ scale: 1.1, rotate: 5 }}
+        >
           <div className="flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs font-bold rounded-full shadow-lg">
             <Crown className="w-3 h-3" />
             Premium
           </div>
-        </div>
+        </motion.div>
       )}
 
-      <div className="p-8">
+      <div className="p-8 relative z-10">
         <div className="flex justify-between items-start mb-6">
-          <div className="bg-primary-container/20 p-4 rounded-2xl group-hover:bg-primary group-hover:text-white transition-all duration-300">
+          <motion.div 
+            whileHover={{ rotate: 360, scale: 1.1 }}
+            transition={{ duration: 0.5 }}
+            className="bg-gradient-to-br from-primary/20 to-purple-500/20 p-4 rounded-2xl group-hover:from-primary group-hover:to-purple-600 group-hover:text-white transition-all duration-300 shadow-lg"
+          >
             <HardDrive className="h-6 w-6 text-primary group-hover:text-white" />
-          </div>
+          </motion.div>
           <div className="flex gap-2">
             {!isNotePremium && (
-              <div className="px-3 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] font-bold uppercase tracking-widest">
+              <motion.div 
+                whileHover={{ scale: 1.1 }}
+                className="px-3 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] font-bold uppercase tracking-widest shadow-sm"
+              >
                 Free
-              </div>
+              </motion.div>
             )}
           </div>
         </div>
