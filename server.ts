@@ -159,7 +159,7 @@ async function startServer() {
           customer_email: customerEmail,
         },
         order_meta: {
-          return_url: `${req.headers.origin || "http://localhost:3000"}/dashboard?order_id={order_id}`,
+          return_url: `${req.headers.origin || "http://localhost:3000"}/payment/success?order_id={order_id}&success=true`,
         },
       };
 

@@ -208,6 +208,65 @@ export default function Premium() {
     return <LoadingScreen />;
   }
 
+  // If user is already premium, show subscription status
+  if (userProfile?.isPremium) {
+    const expiryDate = userProfile.premiumExpiresAt?.toDate?.() || null;
+    const daysLeft = expiryDate ? Math.ceil((expiryDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 0;
+
+    return (
+      <div className="min-h-screen bg-surface pt-32 pb-20">
+        <div className="max-w-4xl mx-auto px-6">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-gradient-to-br from-[#3B31B8] to-purple-700 rounded-3xl p-12 text-center text-white shadow-2xl"
+          >
+            <motion.div
+              animate={{ rotate: [0, 10, -10, 0] }}
+              transition={{ duration: 0.5 }}
+              className="inline-block mb-6"
+            >
+              <CheckCircle2 className="w-24 h-24" />
+            </motion.div>
+            
+            <h1 className="text-4xl font-bold mb-4">You're Already Premium! 🎉</h1>
+            <p className="text-xl opacity-90 mb-8">
+              Enjoy unlimited access to all study materials
+            </p>
+
+            <div className="bg-white/10 backdrop-blur rounded-2xl p-6 mb-8">
+              <p className="text-sm opacity-75 mb-2">Subscription Status</p>
+              <p className="text-3xl font-bold mb-4">Active</p>
+              
+              {expiryDate && (
+                <>
+                  <p className="text-sm opacity-75 mb-1">Valid Until</p>
+                  <p className="text-lg font-semibold">{expiryDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                  <p className="text-sm opacity-75 mt-2">{daysLeft} days remaining</p>
+                </>
+              )}
+            </div>
+
+            <div className="flex gap-4 justify-center">
+              <Link
+                to="/notes"
+                className="px-8 py-4 bg-white text-[#3B31B8] rounded-xl font-bold hover:bg-gray-100 transition-all"
+              >
+                Browse Notes
+              </Link>
+              <Link
+                to="/dashboard"
+                className="px-8 py-4 bg-white/20 backdrop-blur text-white rounded-xl font-bold hover:bg-white/30 transition-all"
+              >
+                Go to Dashboard
+              </Link>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
+
   const handleRazorpayPayment = async () => {
     try {
       if (!window.Razorpay) {
@@ -266,7 +325,9 @@ export default function Premium() {
                   premiumExpiresAt: expiryDate,
                   subscriptionDuration: '2 months'
                 });
-                window.location.href = '/dashboard?success=true';
+                
+                // Redirect to success page with payment details
+                window.location.href = `/payment/success?success=true&payment_id=${response.razorpay_payment_id}&order_id=${response.razorpay_order_id}`;
               } catch (dbErr) {
                 console.error("Firestore error:", dbErr);
                 setError('Payment successful but profile update failed. Please contact support.');

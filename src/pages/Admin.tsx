@@ -55,9 +55,11 @@ export default function Admin() {
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'settings'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'settings'>('pending'); // Changed default to 'pending'
   const [editingPrice, setEditingPrice] = useState<string | null>(null);
   const [priceInput, setPriceInput] = useState('');
+  const [selectedNotes, setSelectedNotes] = useState<string[]>([]);
+  const [bulkAction, setBulkAction] = useState(false);
   
   // Settings state
   const [premiumPrice, setPremiumPrice] = useState(499);
@@ -273,6 +275,58 @@ export default function Admin() {
       fetchNotes();
     } catch (error) {
       console.error('Error approving note:', error);
+    }
+  };
+
+  const handleBulkApprove = async () => {
+    if (selectedNotes.length === 0) return;
+    if (!confirm(`Approve ${selectedNotes.length} note(s)?`)) return;
+    
+    setBulkAction(true);
+    try {
+      await Promise.all(
+        selectedNotes.map(noteId => 
+          updateDoc(doc(db, 'notes', noteId), { status: 'approved' })
+        )
+      );
+      setSelectedNotes([]);
+      fetchNotes();
+    } catch (error) {
+      console.error('Error bulk approving:', error);
+    }
+    setBulkAction(false);
+  };
+
+  const handleBulkReject = async () => {
+    if (selectedNotes.length === 0) return;
+    if (!confirm(`Delete ${selectedNotes.length} note(s)?`)) return;
+    
+    setBulkAction(true);
+    try {
+      await Promise.all(
+        selectedNotes.map(noteId => deleteDoc(doc(db, 'notes', noteId)))
+      );
+      setSelectedNotes([]);
+      fetchNotes();
+    } catch (error) {
+      console.error('Error bulk rejecting:', error);
+    }
+    setBulkAction(false);
+  };
+
+  const toggleSelectNote = (noteId: string) => {
+    setSelectedNotes(prev => 
+      prev.includes(noteId) 
+        ? prev.filter(id => id !== noteId)
+        : [...prev, noteId]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedNotes.length === filteredNotes.length) {
+      setSelectedNotes([]);
+    } else {
+      setSelectedNotes(filteredNotes.map(n => n.id));
     }
   };
 
@@ -510,7 +564,7 @@ export default function Admin() {
         {/* Tabs */}
         <div className="flex gap-4 mb-6 flex-wrap">
           <button
-            onClick={() => setActiveTab('all')}
+            onClick={() => { setActiveTab('all'); setSelectedNotes([]); }}
             className={`px-6 py-3 rounded-xl font-bold transition-all ${
               activeTab === 'all' 
                 ? 'bg-purple-500 text-white' 
@@ -520,7 +574,7 @@ export default function Admin() {
             All Notes ({notes.length})
           </button>
           <button
-            onClick={() => setActiveTab('pending')}
+            onClick={() => { setActiveTab('pending'); setSelectedNotes([]); }}
             className={`px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 ${
               activeTab === 'pending' 
                 ? 'bg-orange-500 text-white' 
@@ -528,10 +582,10 @@ export default function Admin() {
             }`}
           >
             <Clock className="w-4 h-4" />
-            Pending ({pendingNotes.length})
+            Pending Approval ({pendingNotes.length})
           </button>
           <button
-            onClick={() => setActiveTab('settings')}
+            onClick={() => { setActiveTab('settings'); setSelectedNotes([]); }}
             className={`px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 ${
               activeTab === 'settings' 
                 ? 'bg-green-500 text-white' 
@@ -542,6 +596,43 @@ export default function Admin() {
             Price & Coupons
           </button>
         </div>
+
+        {/* Bulk Actions Bar - Show only on pending tab */}
+        {activeTab === 'pending' && selectedNotes.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-[#3B31B8] text-white rounded-xl p-4 mb-6 flex items-center justify-between"
+          >
+            <div className="flex items-center gap-4">
+              <span className="font-bold">{selectedNotes.length} note(s) selected</span>
+              <button
+                onClick={toggleSelectAll}
+                className="text-sm underline hover:no-underline"
+              >
+                {selectedNotes.length === filteredNotes.length ? 'Deselect All' : 'Select All'}
+              </button>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={handleBulkApprove}
+                disabled={bulkAction}
+                className="flex items-center gap-2 bg-green-500 hover:bg-green-600 px-6 py-2 rounded-lg font-bold transition-all disabled:opacity-50"
+              >
+                <Check className="w-4 h-4" />
+                Approve Selected
+              </button>
+              <button
+                onClick={handleBulkReject}
+                disabled={bulkAction}
+                className="flex items-center gap-2 bg-red-500 hover:bg-red-600 px-6 py-2 rounded-lg font-bold transition-all disabled:opacity-50"
+              >
+                <X className="w-4 h-4" />
+                Reject Selected
+              </button>
+            </div>
+          </motion.div>
+        )}
 
         {/* Settings Tab */}
         {activeTab === 'settings' && (
@@ -786,7 +877,17 @@ export default function Admin() {
             <div className="divide-y divide-gray-700">
               {filteredNotes.map((note) => (
                 <div key={note.id} className="p-4 hover:bg-gray-700/30 transition-all">
-                  <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    {/* Checkbox for pending notes */}
+                    {activeTab === 'pending' && (
+                      <input
+                        type="checkbox"
+                        checked={selectedNotes.includes(note.id)}
+                        onChange={() => toggleSelectNote(note.id)}
+                        className="w-5 h-5 rounded bg-gray-700 border-gray-600 text-[#3B31B8] focus:ring-[#3B31B8] focus:ring-offset-0 cursor-pointer"
+                      />
+                    )}
+
                     <div className="flex-1 min-w-0">
                       <h3 className="text-white font-medium truncate">{note.title}</h3>
                       <p className="text-gray-500 text-sm">
