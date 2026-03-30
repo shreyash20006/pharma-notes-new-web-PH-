@@ -1,14 +1,20 @@
-import { HardDrive, Lock, Download, ExternalLink, ChevronDown, ChevronUp, Clock, GraduationCap, Crown } from 'lucide-react';
+import { HardDrive, Lock, Download, ExternalLink, ChevronDown, ChevronUp, Clock, GraduationCap, Crown, Eye, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useFirebase } from '../context/FirebaseContext';
+import { db } from '../lib/firebase';
+import { doc, updateDoc, increment } from 'firebase/firestore';
+import StarRating from './StarRating';
+import RatingModal from './RatingModal';
 
 interface NoteCardProps {
   note: {
     id: string;
     title: string;
     description?: string;
-    file_url: string;
+    file_url?: string;
+    driveLink?: string;
     uploaded_by: string;
     created_at: string;
     category?: string;
@@ -20,6 +26,10 @@ interface NoteCardProps {
     course?: string;
     branch?: string;
     semester?: string;
+    views?: number;
+    downloads?: number;
+    averageRating?: number;
+    ratingCount?: number;
   };
   isPremium: boolean; // User's premium status
   onUnlock?: () => void;
@@ -27,12 +37,60 @@ interface NoteCardProps {
 
 export default function NoteCard({ note, isPremium, onUnlock }: NoteCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const { user } = useFirebase();
   
   // Check if this note requires premium
   const isNotePremium = note.isPremium || (note.price && note.price > 0);
   
   // User can access if: note is free OR user has premium
   const canAccess = !isNotePremium || isPremium;
+
+  const handleDownload = async () => {
+    if (!canAccess) {
+      onUnlock?.();
+      return;
+    }
+
+    setDownloading(true);
+    
+    try {
+      // Increment download count
+      await updateDoc(doc(db, 'notes', note.id), {
+        downloads: increment(1)
+      });
+
+      // Open drive link
+      const downloadUrl = note.driveLink || note.file_url;
+      if (downloadUrl) {
+        window.open(downloadUrl, '_blank');
+      }
+
+      // Show rating modal after download
+      setTimeout(() => {
+        if (user) {
+          setShowRatingModal(true);
+        }
+      }, 2000);
+
+    } catch (error) {
+      console.error('Error downloading note:', error);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const handleView = async () => {
+    try {
+      // Increment view count
+      await updateDoc(doc(db, 'notes', note.id), {
+        views: increment(1)
+      });
+    } catch (error) {
+      console.error('Error updating views:', error);
+    }
+  };
 
   return (
     <motion.div 
