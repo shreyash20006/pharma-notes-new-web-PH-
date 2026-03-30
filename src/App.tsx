@@ -6,6 +6,7 @@ import HomeNew from './pages/HomeNew';
 import Notes from './pages/Notes';
 import NotesLibrary from './pages/NotesLibrary';
 import PricingPlans from './pages/PricingPlans';
+import StudentDashboard from './pages/StudentDashboard';
 import Summarizer from './pages/Summarizer';
 import Quiz from './pages/Quiz';
 import Dashboard from './pages/Dashboard';
@@ -61,6 +62,7 @@ export default function App() {
             <Route path="/notes" element={<Notes />} />
             <Route path="/notes-library" element={<NotesLibrary />} />
             <Route path="/pricing" element={<PricingPlans />} />
+            <Route path="/student-dashboard" element={<StudentDashboard />} />
             <Route path="/summarizer" element={<Summarizer />} />
             <Route path="/quiz" element={<Quiz />} />
             <Route path="/dashboard" element={<Dashboard />} />
