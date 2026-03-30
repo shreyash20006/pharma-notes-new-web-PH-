@@ -4,6 +4,7 @@ import Footer from './components/Footer';
 import Home from './pages/Home';
 import HomeNew from './pages/HomeNew';
 import Notes from './pages/Notes';
+import NotesLibrary from './pages/NotesLibrary';
 import Summarizer from './pages/Summarizer';
 import Quiz from './pages/Quiz';
 import Dashboard from './pages/Dashboard';
@@ -57,6 +58,7 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/home-new" element={<HomeNew />} />
             <Route path="/notes" element={<Notes />} />
+            <Route path="/notes-library" element={<NotesLibrary />} />
             <Route path="/summarizer" element={<Summarizer />} />
             <Route path="/quiz" element={<Quiz />} />
             <Route path="/dashboard" element={<Dashboard />} />
