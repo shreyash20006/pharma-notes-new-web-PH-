@@ -3,6 +3,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
 import HomeNew from './pages/HomeNew';
+import CompleteHomepage from './pages/CompleteHomepage';
 import Notes from './pages/Notes';
 import NotesLibrary from './pages/NotesLibrary';
 import PricingPlans from './pages/PricingPlans';
@@ -59,6 +60,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/home-new" element={<HomeNew />} />
+            <Route path="/complete-homepage" element={<CompleteHomepage />} />
             <Route path="/notes" element={<Notes />} />
             <Route path="/notes-library" element={<NotesLibrary />} />
             <Route path="/pricing" element={<PricingPlans />} />
