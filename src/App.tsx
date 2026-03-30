@@ -56,27 +56,26 @@ export default function App() {
       </AnimatePresence>
 
       <div className="min-h-screen flex flex-col bg-gray-50">
-        <Navbar />
         <main className="flex-grow">
           <Routes>
             <Route path="/" element={<CompleteHomepage />} />
-            <Route path="/home-old" element={<Home />} />
-            <Route path="/home-new" element={<HomeNew />} />
-            <Route path="/logo-showcase" element={<LogoShowcase />} />
-            <Route path="/notes" element={<Notes />} />
-            <Route path="/notes-library" element={<NotesLibrary />} />
-            <Route path="/pricing" element={<PricingPlans />} />
-            <Route path="/student-dashboard" element={<StudentDashboard />} />
-            <Route path="/summarizer" element={<Summarizer />} />
-            <Route path="/quiz" element={<Quiz />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/premium" element={<Premium />} />
-            <Route path="/upload" element={<Upload />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/refunds" element={<Refunds />} />
-            <Route path="/admin" element={<Admin />} />
+            <Route path="/home-old" element={<><Navbar /><Home /></>} />
+            <Route path="/home-new" element={<><Navbar /><HomeNew /></>} />
+            <Route path="/logo-showcase" element={<><Navbar /><LogoShowcase /></>} />
+            <Route path="/notes" element={<><Navbar /><Notes /></>} />
+            <Route path="/notes-library" element={<><Navbar /><NotesLibrary /></>} />
+            <Route path="/pricing" element={<><Navbar /><PricingPlans /></>} />
+            <Route path="/student-dashboard" element={<><Navbar /><StudentDashboard /></>} />
+            <Route path="/summarizer" element={<><Navbar /><Summarizer /></>} />
+            <Route path="/quiz" element={<><Navbar /><Quiz /></>} />
+            <Route path="/dashboard" element={<><Navbar /><Dashboard /></>} />
+            <Route path="/premium" element={<><Navbar /><Premium /></>} />
+            <Route path="/upload" element={<><Navbar /><Upload /></>} />
+            <Route path="/auth" element={<><Navbar /><Auth /></>} />
+            <Route path="/contact" element={<><Navbar /><Contact /></>} />
+            <Route path="/terms" element={<><Navbar /><Terms /></>} />
+            <Route path="/refunds" element={<><Navbar /><Refunds /></>} />
+            <Route path="/admin" element={<><Navbar /><Admin /></>} />
           </Routes>
         </main>
         <AnimatedFooter />
