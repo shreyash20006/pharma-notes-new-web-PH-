@@ -19,6 +19,7 @@ import Contact from './pages/Contact';
 import Terms from './pages/Terms';
 import Refunds from './pages/Refunds';
 import Admin from './pages/Admin';
+import PaymentSuccess from './pages/PaymentSuccess';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import Logo from './components/Logo';
@@ -76,6 +77,7 @@ export default function App() {
             <Route path="/terms" element={<><Navbar /><Terms /></>} />
             <Route path="/refunds" element={<><Navbar /><Refunds /></>} />
             <Route path="/admin" element={<><Navbar /><Admin /></>} />
+            <Route path="/payment/success" element={<PaymentSuccess />} />
           </Routes>
         </main>
         <AnimatedFooter />
