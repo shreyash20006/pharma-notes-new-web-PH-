@@ -23,6 +23,8 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { LogoMinimal } from '../components/NotesDriveLogo';
+import { db } from '../lib/firebase';
+import { collection, query, getDocs } from 'firebase/firestore';
 
 export default function CompleteHomepage() {
   const [showPopup, setShowPopup] = useState(false);
