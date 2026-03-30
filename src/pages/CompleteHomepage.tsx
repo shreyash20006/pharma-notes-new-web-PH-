@@ -75,9 +75,6 @@ export default function CompleteHomepage() {
       {/* PRICING STRIP */}
       <PricingStrip />
 
-      {/* TESTIMONIALS */}
-      <Testimonials />
-
       {/* FOOTER */}
       <Footer />
 
@@ -771,68 +768,7 @@ function PricingStrip() {
   );
 }
 
-// ============ TESTIMONIALS ============
-function Testimonials() {
-  const testimonials = [
-    {
-      name: 'Priya Sharma',
-      college: 'B.Pharma 3rd Year, RGPV Bhopal',
-      text: 'Best notes platform for pharma students!',
-      rating: 5,
-    },
-    {
-      name: 'Rahul Verma',
-      college: 'BTech CSE, VTU Bangalore',
-      text: 'DSA and DBMS notes saved my semester!',
-      rating: 5,
-    },
-    {
-      name: 'Anjali Patel',
-      college: 'B.Pharma Final Year, Mumbai University',
-      text: 'AI summaries are a game changer for exams.',
-      rating: 5,
-    },
-  ];
-
-  return (
-    <section className="py-20 px-4 sm:px-6 lg:px-8 bg-[#0A0F1E]">
-      <div className="max-w-7xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-12"
-        >
-          <h2 className="text-4xl font-bold mb-4">Loved by Students</h2>
-        </motion.div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {testimonials.map((testimonial, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
-              className="bg-[#0D1117]/80 backdrop-blur-xl border border-white/10 rounded-2xl p-6"
-            >
-              <div className="flex gap-1 mb-4">
-                {[...Array(testimonial.rating)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 fill-yellow-500 text-yellow-500" />
-                ))}
-              </div>
-              <p className="text-gray-300 mb-6 leading-relaxed">"{testimonial.text}"</p>
-              <div>
-                <div className="font-bold">{testimonial.name}</div>
-                <div className="text-sm text-gray-400">{testimonial.college}</div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
+// Testimonials removed - showing only real user ratings on PDFs
 
 // ============ FOOTER WITH PAYMENT METHODS ============
 function Footer() {
