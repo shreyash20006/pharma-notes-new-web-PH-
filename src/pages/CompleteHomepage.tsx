@@ -25,6 +25,7 @@ import { Link } from 'react-router-dom';
 import { LogoMinimal } from '../components/NotesDriveLogo';
 import { db } from '../lib/firebase';
 import { collection, query, getDocs } from 'firebase/firestore';
+import RealSubjectsPreview from '../components/RealSubjectsPreview';
 
 export default function CompleteHomepage() {
   const [showPopup, setShowPopup] = useState(false);
@@ -64,6 +65,9 @@ export default function CompleteHomepage() {
 
       {/* FEATURES GRID */}
       <FeaturesGrid />
+
+      {/* REAL SUBJECTS PREVIEW - Only shows uploaded notes */}
+      <RealSubjectsPreview selectedStream={selectedStream} setSelectedStream={setSelectedStream} />
 
       {/* UNIVERSITY STRIP */}
       <UniversityStrip />
