@@ -22,6 +22,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { LogoMinimal } from '../components/NotesDriveLogo';
 
 export default function CompleteHomepage() {
   const [showPopup, setShowPopup] = useState(false);
@@ -139,15 +140,9 @@ function Navbar() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 bg-gradient-to-br from-[#3B31B8] to-[#6366F1] rounded-xl flex items-center justify-center shadow-lg shadow-[#3B31B8]/30">
-              <Shield className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <div className="font-bold text-xl tracking-tight">NotesDrive</div>
-              <div className="text-[10px] text-gray-400 -mt-1">Your Smartest Study Partner</div>
-            </div>
+          {/* Animated Logo */}
+          <Link to="/">
+            <LogoMinimal size="md" animated={true} />
           </Link>
 
           {/* Nav Links */}

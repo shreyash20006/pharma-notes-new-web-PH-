@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
-import Footer from './components/Footer';
+import AnimatedFooter from './components/AnimatedFooter';
 import Home from './pages/Home';
 import HomeNew from './pages/HomeNew';
 import CompleteHomepage from './pages/CompleteHomepage';
@@ -59,9 +59,9 @@ export default function App() {
         <Navbar />
         <main className="flex-grow">
           <Routes>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<CompleteHomepage />} />
+            <Route path="/home-old" element={<Home />} />
             <Route path="/home-new" element={<HomeNew />} />
-            <Route path="/complete-homepage" element={<CompleteHomepage />} />
             <Route path="/logo-showcase" element={<LogoShowcase />} />
             <Route path="/notes" element={<Notes />} />
             <Route path="/notes-library" element={<NotesLibrary />} />
@@ -79,7 +79,7 @@ export default function App() {
             <Route path="/admin" element={<Admin />} />
           </Routes>
         </main>
-        <Footer />
+        <AnimatedFooter />
       </div>
     </Router>
   );
