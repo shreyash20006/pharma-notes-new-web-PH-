@@ -204,7 +204,20 @@ export default function Premium() {
     setCouponError('');
   };
 
+  // Redirect non-premium users to pricing page
+  useEffect(() => {
+    if (isAuthReady && user && !userProfile?.isPremium) {
+      navigate('/pricing');
+    }
+  }, [isAuthReady, user, userProfile, navigate]);
+
   if (authLoading || !isAuthReady) {
+    return <LoadingScreen />;
+  }
+
+  // If not logged in, redirect to auth
+  if (!user) {
+    navigate('/auth');
     return <LoadingScreen />;
   }
 

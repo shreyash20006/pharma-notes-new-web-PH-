@@ -242,7 +242,7 @@ function PricingCard({ plan, index }: { plan: any, index: number }) {
 
       {/* CTA Button */}
       <Link
-        to="/premium"
+        to={plan.price === '₹0' ? '/notes' : '/premium'}
         className={`block w-full text-center px-6 py-4 rounded-xl font-bold text-lg transition-all ${getButtonColor()}`}
         data-testid={`cta-${plan.testId}`}
       >

@@ -68,9 +68,6 @@ export default function CompleteHomepage() {
       {/* SUBJECTS PREVIEW */}
       <SubjectsPreview selectedStream={selectedStream} setSelectedStream={setSelectedStream} />
 
-      {/* TRENDING NOTES */}
-      <TrendingNotes />
-
       {/* UNIVERSITY STRIP */}
       <UniversityStrip />
 
