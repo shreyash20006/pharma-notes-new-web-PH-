@@ -7,6 +7,9 @@ import CompleteHomepage from './pages/CompleteHomepage';
 import LogoShowcase from './pages/LogoShowcase';
 import Notes from './pages/Notes';
 import NotesLibrary from './pages/NotesLibrary';
+import BranchSelection from './pages/BranchSelection';
+import SubjectSelection from './pages/SubjectSelection';
+import UserSettings from './pages/UserSettings';
 import PricingPlans from './pages/PricingPlans';
 import StudentDashboard from './pages/StudentDashboard';
 import Summarizer from './pages/Summarizer';
@@ -65,6 +68,10 @@ export default function App() {
             <Route path="/logo-showcase" element={<><Navbar /><LogoShowcase /></>} />
             <Route path="/notes" element={<><Navbar /><Notes /></>} />
             <Route path="/notes-library" element={<><Navbar /><NotesLibrary /></>} />
+            <Route path="/notes-library/btech" element={<><Navbar /><BranchSelection /></>} />
+            <Route path="/notes-library/btech/:branch" element={<><Navbar /><SubjectSelection /></>} />
+            <Route path="/notes-library/bpharma" element={<><Navbar /><SubjectSelection /></>} />
+            <Route path="/notes-library/:stream/:branch/:semester/:subject" element={<><Navbar /><SubjectPDFs /></>} />
             <Route path="/pricing" element={<><Navbar /><PricingPlans /></>} />
             <Route path="/student-dashboard" element={<><Navbar /><StudentDashboard /></>} />
             <Route path="/summarizer" element={<><Navbar /><Summarizer /></>} />
@@ -77,6 +84,7 @@ export default function App() {
             <Route path="/terms" element={<><Navbar /><Terms /></>} />
             <Route path="/refunds" element={<><Navbar /><Refunds /></>} />
             <Route path="/admin" element={<><Navbar /><Admin /></>} />
+            <Route path="/settings" element={<><Navbar /><UserSettings /></>} />
             <Route path="/payment/success" element={<PaymentSuccess />} />
           </Routes>
         </main>
