@@ -41,17 +41,8 @@ export default function CompleteHomepage() {
       {/* HERO SECTION */}
       <HeroSection />
 
-      {/* ANIMATED STATS COUNTER */}
-      <StatsCounter />
-
-      {/* STREAM SELECTOR */}
-      <StreamSelector selectedStream={selectedStream} setSelectedStream={setSelectedStream} />
-
       {/* FEATURES GRID */}
       <FeaturesGrid />
-
-      {/* REAL SUBJECTS PREVIEW - Only shows uploaded notes */}
-      <RealSubjectsPreview selectedStream={selectedStream} setSelectedStream={setSelectedStream} />
 
       {/* UNIVERSITY STRIP */}
       <UniversityStrip />
