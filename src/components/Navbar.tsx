@@ -32,7 +32,6 @@ export default function Navbar() {
             <Link to="/summarizer" className="text-sm font-medium text-on-surface-variant hover:text-primary transition-colors">AI Summarizer</Link>
             <Link to="/quiz" className="text-sm font-medium text-on-surface-variant hover:text-primary transition-colors">Quiz Generator</Link>
             <Link to="/upload" className="text-sm font-medium text-on-surface-variant hover:text-primary transition-colors">Upload Notes</Link>
-            <Link to="/premium" className="text-sm font-medium text-on-surface-variant hover:text-primary transition-colors">Premium</Link>
             
             <a 
               href="https://t.me/your_channel" 
@@ -95,7 +94,6 @@ export default function Navbar() {
           <Link to="/notes" className="block text-base font-medium text-on-surface-variant py-2" onClick={() => setIsMenuOpen(false)}>Notes</Link>
           <Link to="/summarizer" className="block text-base font-medium text-on-surface-variant py-2" onClick={() => setIsMenuOpen(false)}>AI Summarizer</Link>
           <Link to="/quiz" className="block text-base font-medium text-on-surface-variant py-2" onClick={() => setIsMenuOpen(false)}>Quiz Generator</Link>
-          <Link to="/premium" className="block text-base font-medium text-on-surface-variant py-2" onClick={() => setIsMenuOpen(false)}>Premium</Link>
           
           <a 
             href="https://t.me/your_channel" 

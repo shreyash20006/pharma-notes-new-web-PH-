@@ -114,13 +114,6 @@ export default function RealSubjectsPreview({ selectedStream, setSelectedStream 
                   whileHover={{ y: -5 }}
                   className="relative bg-[#0D1117] border border-white/10 rounded-2xl p-6 hover:border-[#3B31B8]/50 transition-all group"
                 >
-                  {note.isPremium && (
-                    <div className="absolute -top-3 -right-3 px-3 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full text-xs font-bold flex items-center gap-1">
-                      <Crown className="w-3 h-3" />
-                      PRO
-                    </div>
-                  )}
-
                   <h3 className="text-xl font-bold mb-2 line-clamp-2">{note.title}</h3>
                   <div className="flex items-center gap-2 mb-4 flex-wrap">
                     {note.semester && (
@@ -154,24 +147,11 @@ export default function RealSubjectsPreview({ selectedStream, setSelectedStream 
                   </div>
 
                   <Link
-                    to={note.isPremium ? "/pricing" : `/notes`}
-                    className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold transition-all ${
-                      note.isPremium
-                        ? 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10'
-                        : 'bg-[#3B31B8] hover:bg-[#4d42d4] text-white'
-                    }`}
+                    to="/notes"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold transition-all bg-[#3B31B8] hover:bg-[#4d42d4] text-white"
                   >
-                    {note.isPremium ? (
-                      <>
-                        <Lock className="w-5 h-5" />
-                        Upgrade to Access
-                      </>
-                    ) : (
-                      <>
-                        <Download className="w-5 h-5" />
-                        View & Download
-                      </>
-                    )}
+                    <Download className="w-5 h-5" />
+                    View & Download
                   </Link>
                 </motion.div>
               ))}
