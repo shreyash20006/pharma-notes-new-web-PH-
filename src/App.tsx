@@ -9,6 +9,7 @@ import Notes from './pages/Notes';
 import NotesLibrary from './pages/NotesLibrary';
 import BranchSelection from './pages/BranchSelection';
 import SubjectSelection from './pages/SubjectSelection';
+import SubjectPDFs from './pages/SubjectPDFs';
 import UserSettings from './pages/UserSettings';
 import PricingPlans from './pages/PricingPlans';
 import StudentDashboard from './pages/StudentDashboard';
