@@ -39,7 +39,11 @@ NotesDrive is an educational SaaS platform for BTech and B.Pharma students. Prov
 - Splash screen animation
 - NewHomepage with hero, features, stats, CTA sections
 
-### Session 2 (Stacked Notes Animation) - 2026-03-31
+### Session 3 (Bug Fix - Scroll Animation) - 2026-03-31
+- Fixed: `overflow-hidden` / `overflow-x: hidden` on NewHomepage wrapper was breaking `position: sticky` (CSS spec: any non-visible overflow on ancestor creates scroll container, breaking sticky)
+- Fixed: Switched from `useScroll({ target: containerRef })` to `useMotionValueEvent` on window scroll + live `getBoundingClientRect()` per scroll tick (most reliable pattern)
+- Fixed: Removed `whileInView` from heading inside sticky container (IntersectionObserver can fail inside sticky)
+- Result: All 4 cards now animate correctly at each scroll position
 - Built `StackedNotesSection` component (/app/src/components/StackedNotesSection.tsx)
 - Scroll-triggered stacked card animation using framer-motion useScroll
 - 4-5 cards stacked like a physical deck, each slides up as user scrolls

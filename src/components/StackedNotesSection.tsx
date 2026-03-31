@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
-import { motion, useScroll, useTransform, MotionValue } from 'framer-motion';
+import { motion, useScroll, useMotionValue, useMotionValueEvent, useTransform, MotionValue } from 'framer-motion';
 import { db } from '../lib/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { FileText, Download, ExternalLink, GraduationCap, Crown, ChevronDown } from 'lucide-react';
@@ -20,7 +20,6 @@ interface Note {
   status?: string;
 }
 
-// Fallback notes from the actual uploaded content (Human Anatomy series)
 const FALLBACK_NOTES: Note[] = [
   {
     id: 'fallback-1',
@@ -61,45 +60,16 @@ const FALLBACK_NOTES: Note[] = [
 ];
 
 const CARD_PALETTES = [
-  {
-    border: 'border-[#3B82F6]/40',
-    icon: 'from-[#3B31B8]/30 to-[#3B82F6]/30',
-    iconColor: 'text-[#60A5FA]',
-    tag: 'bg-[#3B31B8]/20 text-[#818CF8] border-[#3B31B8]/30',
-    btn: 'bg-[#3B31B8] hover:bg-[#4a3fd4]',
-  },
-  {
-    border: 'border-purple-500/40',
-    icon: 'from-purple-500/20 to-pink-500/20',
-    iconColor: 'text-purple-400',
-    tag: 'bg-purple-500/10 text-purple-300 border-purple-500/20',
-    btn: 'bg-purple-600 hover:bg-purple-500',
-  },
-  {
-    border: 'border-cyan-500/40',
-    icon: 'from-cyan-500/20 to-blue-500/20',
-    iconColor: 'text-cyan-400',
-    tag: 'bg-cyan-500/10 text-cyan-300 border-cyan-500/20',
-    btn: 'bg-cyan-700 hover:bg-cyan-600',
-  },
-  {
-    border: 'border-emerald-500/40',
-    icon: 'from-emerald-500/20 to-teal-500/20',
-    iconColor: 'text-emerald-400',
-    tag: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20',
-    btn: 'bg-emerald-700 hover:bg-emerald-600',
-  },
-  {
-    border: 'border-orange-500/40',
-    icon: 'from-orange-500/20 to-red-500/20',
-    iconColor: 'text-orange-400',
-    tag: 'bg-orange-500/10 text-orange-300 border-orange-500/20',
-    btn: 'bg-orange-700 hover:bg-orange-600',
-  },
+  { border: 'border-[#3B82F6]/40', icon: 'from-[#3B31B8]/30 to-[#3B82F6]/30', iconColor: 'text-[#60A5FA]', tag: 'bg-[#3B31B8]/20 text-[#818CF8] border-[#3B31B8]/30', btn: 'bg-[#3B31B8] hover:bg-[#4a3fd4]' },
+  { border: 'border-purple-500/40', icon: 'from-purple-500/20 to-pink-500/20', iconColor: 'text-purple-400', tag: 'bg-purple-500/10 text-purple-300 border-purple-500/20', btn: 'bg-purple-600 hover:bg-purple-500' },
+  { border: 'border-cyan-500/40', icon: 'from-cyan-500/20 to-blue-500/20', iconColor: 'text-cyan-400', tag: 'bg-cyan-500/10 text-cyan-300 border-cyan-500/20', btn: 'bg-cyan-700 hover:bg-cyan-600' },
+  { border: 'border-emerald-500/40', icon: 'from-emerald-500/20 to-teal-500/20', iconColor: 'text-emerald-400', tag: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20', btn: 'bg-emerald-700 hover:bg-emerald-600' },
+  { border: 'border-orange-500/40', icon: 'from-orange-500/20 to-red-500/20', iconColor: 'text-orange-400', tag: 'bg-orange-500/10 text-orange-300 border-orange-500/20', btn: 'bg-orange-700 hover:bg-orange-600' },
 ];
 
-function cardY(scroll: number, i: number, n: number): number {
-  const float = scroll * n;
+// --- Transform helpers (pure functions, no hooks) ---
+function getCardY(progress: number, i: number, n: number): number {
+  const float = progress * n;
   const exit = Math.floor(float);
   const frac = Math.min(float - exit, 1);
   if (i < exit) return -900;
@@ -108,11 +78,10 @@ function cardY(scroll: number, i: number, n: number): number {
     return eased * -800;
   }
   const pos = i - exit;
-  // Larger offsets so the stack is clearly visible
-  return pos * 28 - frac * 28;
+  return pos * 26 - frac * 26;
 }
-function cardScale(scroll: number, i: number, n: number): number {
-  const float = scroll * n;
+function getCardScale(progress: number, i: number, n: number): number {
+  const float = progress * n;
   const exit = Math.floor(float);
   const frac = Math.min(float - exit, 1);
   if (i < exit) return 0.7;
@@ -120,32 +89,33 @@ function cardScale(scroll: number, i: number, n: number): number {
   const pos = i - exit;
   const base = 1 - pos * 0.07;
   const next = 1 - (pos - 1) * 0.07;
-  return Math.max(0.7, base + frac * (next - base));
+  return Math.max(0.72, base + frac * (next - base));
 }
-function cardOpacity(scroll: number, i: number, n: number): number {
-  const float = scroll * n;
+function getCardOpacity(progress: number, i: number, n: number): number {
+  const float = progress * n;
   const exit = Math.floor(float);
   const frac = Math.min(float - exit, 1);
   if (i < exit) return 0;
   if (i === exit) return Math.max(0, 1 - frac * 1.6);
   const pos = i - exit;
-  // Keep background cards more visible
-  const base = 1 - pos * 0.18;
-  const next = 1 - (pos - 1) * 0.18;
+  const base = 1 - pos * 0.2;
+  const next = 1 - (pos - 1) * 0.2;
   return Math.max(0.25, base + frac * (next - base));
 }
 
+// Individual card — derives transforms from shared scrollProgress MotionValue
 function NoteStackCard({
-  note, index, total, scrollYProgress,
+  note, index, total, scrollProgress,
 }: {
   note: Note;
   index: number;
   total: number;
-  scrollYProgress: MotionValue<number>;
+  scrollProgress: MotionValue<number>;
 }) {
-  const y = useTransform(scrollYProgress, (s: number) => cardY(s, index, total));
-  const scale = useTransform(scrollYProgress, (s: number) => cardScale(s, index, total));
-  const opacity = useTransform(scrollYProgress, (s: number) => cardOpacity(s, index, total));
+  const y = useTransform(scrollProgress, (p: number) => getCardY(p, index, total));
+  const scale = useTransform(scrollProgress, (p: number) => getCardScale(p, index, total));
+  const opacity = useTransform(scrollProgress, (p: number) => getCardOpacity(p, index, total));
+
   const isNotePremium = note.isPremium || (note.price && note.price > 0);
   const zIndex = total - index;
   const pal = CARD_PALETTES[index % CARD_PALETTES.length];
@@ -165,8 +135,8 @@ function NoteStackCard({
       }}
     >
       <div
-        className={`bg-[#0D1B2A] border ${pal.border} rounded-2xl p-6 backdrop-blur-sm`}
-        style={{ boxShadow: '0 24px 64px rgba(0,0,0,0.55)' }}
+        className={`bg-[#0D1B2A] border ${pal.border} rounded-2xl p-6`}
+        style={{ boxShadow: '0 24px 64px rgba(0,0,0,0.6)' }}
       >
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
@@ -215,7 +185,7 @@ function NoteStackCard({
           )}
         </div>
 
-        {/* Downloads */}
+        {/* Stats */}
         <div className="flex items-center gap-1.5 text-sm text-gray-500 mb-5">
           <Download className="w-3.5 h-3.5" />
           <span>{note.downloads || 0} downloads</span>
@@ -239,15 +209,48 @@ function NoteStackCard({
   );
 }
 
-// Inner component: always mounted, ref always attached
+// Inner component — always mounted, uses getBoundingClientRect on every scroll
 function StackedNotesSectionInner({ notes }: { notes: Note[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const n = notes.length;
 
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ['start start', 'end end'],
+  // Direct MotionValue for scroll progress (0→1 through this section)
+  const scrollProgress = useMotionValue(0);
+
+  const { scrollY } = useScroll();
+
+  // Recompute progress on every scroll tick using live getBoundingClientRect
+  useMotionValueEvent(scrollY, 'change', (latest) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const sectionHeight = containerRef.current.offsetHeight;
+    const viewportH = window.innerHeight;
+    const scrollableRange = sectionHeight - viewportH;
+
+    if (rect.top > 0) {
+      // Section hasn't reached viewport top yet
+      scrollProgress.set(0);
+    } else if (rect.bottom <= viewportH) {
+      // Section has fully passed the viewport
+      scrollProgress.set(1);
+    } else {
+      // Sticky active — progress = how far we've scrolled into the section
+      const progress = Math.max(0, Math.min(1, -rect.top / scrollableRange));
+      scrollProgress.set(progress);
+    }
   });
+
+  // Also set initial value on mount (in case user loaded mid-page)
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const sectionHeight = containerRef.current.offsetHeight;
+    const viewportH = window.innerHeight;
+    const range = sectionHeight - viewportH;
+    if (rect.top <= 0 && rect.bottom > viewportH) {
+      scrollProgress.set(Math.max(0, Math.min(1, -rect.top / range)));
+    }
+  }, []);
 
   return (
     <section
@@ -256,27 +259,21 @@ function StackedNotesSectionInner({ notes }: { notes: Note[] }) {
       style={{ height: `${100 + n * 90}vh` }}
       className="relative bg-[#0D1117]"
     >
-      <div className="sticky top-0 h-screen flex flex-col items-center justify-center px-4" style={{ overflow: 'clip' }}>
+      <div
+        className="sticky top-0 h-screen flex flex-col items-center justify-center px-4"
+        style={{ overflow: 'visible' }}
+      >
         {/* Ambient glow */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none" style={{ overflow: 'hidden' }}>
           <div
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
             style={{ width: 600, height: 600, background: 'radial-gradient(circle, rgba(59,49,184,0.12) 0%, transparent 70%)' }}
           />
         </div>
 
-        {/* Heading */}
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7 }}
-          className="text-center mb-10 z-50 relative"
-        >
-          <p
-            className="text-xs font-bold uppercase tracking-[0.2em] mb-3"
-            style={{ color: '#0EA5E9' }}
-          >
+        {/* Heading — always visible (no whileInView inside sticky) */}
+        <div className="text-center mb-10 z-50 relative">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] mb-3" style={{ color: '#0EA5E9' }}>
             Top Course Notes
           </p>
           <h2 className="text-4xl md:text-5xl font-black text-white mb-3">
@@ -285,13 +282,13 @@ function StackedNotesSectionInner({ notes }: { notes: Note[] }) {
           <p className="text-gray-400 text-base">
             {n} curated notes — scroll down to browse each one
           </p>
-        </motion.div>
+        </div>
 
-        {/* Stack container */}
+        {/* Card stack */}
         <div
           data-testid="card-stack-container"
           className="relative w-full z-10"
-          style={{ height: '460px' }}
+          style={{ height: '440px' }}
         >
           {notes.map((note, i) => (
             <NoteStackCard
@@ -299,7 +296,7 @@ function StackedNotesSectionInner({ notes }: { notes: Note[] }) {
               note={note}
               index={i}
               total={n}
-              scrollYProgress={scrollYProgress}
+              scrollProgress={scrollProgress}
             />
           ))}
         </div>
@@ -318,14 +315,12 @@ function StackedNotesSectionInner({ notes }: { notes: Note[] }) {
   );
 }
 
-// Outer wrapper: fetches data, renders inner only when ready
+// Outer wrapper — data fetching only
 export default function StackedNotesSection() {
-  // Start with fallback notes immediately — no loading flash
   const [notes, setNotes] = useState<Note[]>(FALLBACK_NOTES);
 
   useEffect(() => {
     let cancelled = false;
-
     async function fetchNotes() {
       try {
         const snapshot = await getDocs(collection(db, 'notes'));
@@ -334,15 +329,11 @@ export default function StackedNotesSection() {
         const filtered = all
           .filter(n => n.status === 'approved' || n.status === 'published' || !n.status)
           .slice(0, 5);
-
-        if (!cancelled && filtered.length >= 2) {
-          setNotes(filtered);
-        }
+        if (!cancelled && filtered.length >= 2) setNotes(filtered);
       } catch {
-        // Keep fallback notes on error
+        // keep fallback
       }
     }
-
     fetchNotes();
     return () => { cancelled = true; };
   }, []);

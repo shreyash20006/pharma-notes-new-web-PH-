@@ -26,7 +26,7 @@ export default function NewHomepage() {
   const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
   return (
-    <div className="min-h-screen bg-[#0D1117] text-white overflow-hidden">
+    <div className="min-h-screen bg-[#0D1117] text-white">
       {/* Animated Background */}
       <div className="fixed inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-br from-[#0D1117] via-[#161B22] to-[#0D1117]"></div>
