@@ -28,23 +28,7 @@ import { collection, query, getDocs } from 'firebase/firestore';
 import RealSubjectsPreview from '../components/RealSubjectsPreview';
 
 export default function CompleteHomepage() {
-  const [showPopup, setShowPopup] = useState(false);
   const [selectedStream, setSelectedStream] = useState<'bpharma' | 'btech'>('bpharma');
-
-  useEffect(() => {
-    const hasSeenPopup = localStorage.getItem('notesdrive_popup_seen');
-    if (!hasSeenPopup) {
-      const timer = setTimeout(() => {
-        setShowPopup(true);
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, []);
-
-  const closePopup = () => {
-    setShowPopup(false);
-    localStorage.setItem('notesdrive_popup_seen', 'true');
-  };
 
   return (
     <div className="min-h-screen bg-[#0D1117] text-white overflow-x-hidden">
@@ -74,9 +58,6 @@ export default function CompleteHomepage() {
 
       {/* FOOTER */}
       <Footer />
-
-      {/* ANNOUNCEMENT POPUP */}
-      <AnnouncementPopup show={showPopup} onClose={closePopup} />
     </div>
   );
 }
