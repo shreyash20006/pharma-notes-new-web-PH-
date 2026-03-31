@@ -32,7 +32,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Invalid amount' });
     }
 
-    const origin = req.headers.origin || req.headers.referer || 'https://www.notesdrive.shop';
+    const origin = req.headers.origin || req.headers.referer || process.env.APP_URL || '';
 
     const orderRequest = {
       order_amount: amount,
