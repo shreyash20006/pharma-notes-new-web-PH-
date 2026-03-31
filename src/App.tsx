@@ -3,7 +3,7 @@ import Navbar from './components/Navbar';
 import AnimatedFooter from './components/AnimatedFooter';
 import Home from './pages/Home';
 import HomeNew from './pages/HomeNew';
-import CompleteHomepage from './pages/CompleteHomepage';
+import NewHomepage from './pages/NewHomepage';
 import LogoShowcase from './pages/LogoShowcase';
 import Notes from './pages/Notes';
 import NotesLibrary from './pages/NotesLibrary';
@@ -62,7 +62,7 @@ export default function App() {
       <div className="min-h-screen flex flex-col bg-gray-50">
         <main className="flex-grow">
           <Routes>
-            <Route path="/" element={<CompleteHomepage />} />
+            <Route path="/" element={<NewHomepage />} />
             <Route path="/home-old" element={<><Navbar /><Home /></>} />
             <Route path="/home-new" element={<><Navbar /><HomeNew /></>} />
             <Route path="/logo-showcase" element={<><Navbar /><LogoShowcase /></>} />
