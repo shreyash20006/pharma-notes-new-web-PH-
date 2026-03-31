@@ -67,40 +67,43 @@ const CARD_PALETTES = [
   { border: 'border-orange-500/40', icon: 'from-orange-500/20 to-red-500/20', iconColor: 'text-orange-400', tag: 'bg-orange-500/10 text-orange-300 border-orange-500/20', btn: 'bg-orange-700 hover:bg-orange-600' },
 ];
 
-// --- Transform helpers (pure functions, no hooks) ---
+// --- Exit direction vectors per card index ---
+const EXIT_VECTORS = [
+  { x: 0,     y: -900, rotate: 0   },  // Card 0: straight UP
+  { x: 1100,  y: -250, rotate: 20  },  // Card 1: RIGHT + slight up
+  { x: -1100, y: -250, rotate: -20 },  // Card 2: LEFT + slight up
+  { x: 0,     y: -900, rotate: -8  },  // Card 3: UP + tilt
+];
+
+function getCardX(progress: number, i: number, n: number): number {
+  const float = progress * n;
+  const exit = Math.floor(float);
+  const frac = Math.min(float - exit, 1);
+  const vec = EXIT_VECTORS[i % EXIT_VECTORS.length];
+  if (i < exit) return vec.x;
+  if (i === exit) return (frac * frac) * vec.x;
+  return 0;
+}
+
 function getCardY(progress: number, i: number, n: number): number {
   const float = progress * n;
   const exit = Math.floor(float);
   const frac = Math.min(float - exit, 1);
-  if (i < exit) return -900;
-  if (i === exit) {
-    const eased = frac * frac * frac;
-    return eased * -800;
-  }
+  const vec = EXIT_VECTORS[i % EXIT_VECTORS.length];
+  if (i < exit) return vec.y;
+  if (i === exit) return (frac * frac) * vec.y;
   const pos = i - exit;
   return pos * 26 - frac * 26;
 }
-function getCardScale(progress: number, i: number, n: number): number {
+
+function getCardRotate(progress: number, i: number, n: number): number {
   const float = progress * n;
   const exit = Math.floor(float);
   const frac = Math.min(float - exit, 1);
-  if (i < exit) return 0.7;
-  if (i === exit) return 1 - frac * 0.06;
-  const pos = i - exit;
-  const base = 1 - pos * 0.07;
-  const next = 1 - (pos - 1) * 0.07;
-  return Math.max(0.72, base + frac * (next - base));
-}
-function getCardOpacity(progress: number, i: number, n: number): number {
-  const float = progress * n;
-  const exit = Math.floor(float);
-  const frac = Math.min(float - exit, 1);
-  if (i < exit) return 0;
-  if (i === exit) return Math.max(0, 1 - frac * 1.6);
-  const pos = i - exit;
-  const base = 1 - pos * 0.2;
-  const next = 1 - (pos - 1) * 0.2;
-  return Math.max(0.25, base + frac * (next - base));
+  const vec = EXIT_VECTORS[i % EXIT_VECTORS.length];
+  if (i < exit) return vec.rotate;
+  if (i === exit) return frac * frac * vec.rotate;
+  return 0;
 }
 
 // Individual card — derives transforms from shared scrollProgress MotionValue
@@ -112,9 +115,31 @@ function NoteStackCard({
   total: number;
   scrollProgress: MotionValue<number>;
 }) {
+  const x = useTransform(scrollProgress, (p: number) => getCardX(p, index, total));
   const y = useTransform(scrollProgress, (p: number) => getCardY(p, index, total));
-  const scale = useTransform(scrollProgress, (p: number) => getCardScale(p, index, total));
-  const opacity = useTransform(scrollProgress, (p: number) => getCardOpacity(p, index, total));
+  const rotate = useTransform(scrollProgress, (p: number) => getCardRotate(p, index, total));
+  const scale = useTransform(scrollProgress, (p: number) => {
+    const float = p * total;
+    const exit = Math.floor(float);
+    const frac = Math.min(float - exit, 1);
+    if (index < exit) return 0.7;
+    if (index === exit) return 1 - frac * 0.06;
+    const pos = index - exit;
+    const base = 1 - pos * 0.07;
+    const next = 1 - (pos - 1) * 0.07;
+    return Math.max(0.72, base + frac * (next - base));
+  });
+  const opacity = useTransform(scrollProgress, (p: number) => {
+    const float = p * total;
+    const exit = Math.floor(float);
+    const frac = Math.min(float - exit, 1);
+    if (index < exit) return 0;
+    if (index === exit) return Math.max(0, 1 - frac * 1.6);
+    const pos = index - exit;
+    const base = 1 - pos * 0.2;
+    const next = 1 - (pos - 1) * 0.2;
+    return Math.max(0.25, base + frac * (next - base));
+  });
 
   const isNotePremium = note.isPremium || (note.price && note.price > 0);
   const zIndex = total - index;
@@ -124,7 +149,9 @@ function NoteStackCard({
     <motion.div
       data-testid={`stack-card-${index}`}
       style={{
+        x,
         y,
+        rotate,
         scale,
         opacity,
         zIndex,

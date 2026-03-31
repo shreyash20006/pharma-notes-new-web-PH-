@@ -24,28 +24,27 @@ interface Note {
 }
 
 export default function NoteList() {
-  const { userProfile } = useFirebase();
+  const { userProfile, isAuthReady } = useFirebase();
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
 
   useEffect(() => {
+    // Wait for Firebase auth to be ready before fetching
+    if (!isAuthReady) return;
+
     async function fetchNotes() {
       try {
-        // Simple query without orderBy (avoids index requirement)
         const q = query(collection(db, 'notes'));
         const snapshot = await getDocs(q);
         const data = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         })) as Note[];
-        
-        console.log('Fetched notes:', data.length);
-        
-        // Filter for approved/published notes and sort by createdAt
+
         const approvedNotes = data
-          .filter(note => 
+          .filter(note =>
             note.status === 'approved' || !note.status || note.status === 'published'
           )
           .sort((a, b) => {
@@ -53,11 +52,11 @@ export default function NoteList() {
             const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
             return dateB.getTime() - dateA.getTime();
           });
-        
-        console.log('Approved notes:', approvedNotes.length);
+
         setNotes(approvedNotes);
-      } catch (error) {
-        console.error("Error fetching notes:", error);
+      } catch (error: any) {
+        console.error('Error fetching notes:', error);
+        // If permission denied (not logged in), just show empty
         setNotes([]);
       } finally {
         setLoading(false);
@@ -65,7 +64,7 @@ export default function NoteList() {
     }
 
     fetchNotes();
-  }, []);
+  }, [isAuthReady]);
 
   const categories = ['All', ...Array.from(new Set(notes.map(n => n.category || 'Uncategorized')))];
 
@@ -103,10 +102,10 @@ export default function NoteList() {
         </div>
       </div>
 
-      {loading ? (
+      {loading || !isAuthReady ? (
         <div className="flex flex-col items-center justify-center py-32 text-on-surface-variant">
           <Loader2 className="h-12 w-12 animate-spin mb-4 text-primary" />
-          <p className="font-bold font-headline">Syncing with Repository...</p>
+          <p className="font-bold font-headline">Loading notes...</p>
         </div>
       ) : filteredNotes.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">

@@ -23,6 +23,7 @@ import Contact from './pages/Contact';
 import Terms from './pages/Terms';
 import Refunds from './pages/Refunds';
 import Admin from './pages/Admin';
+import BpharmaNotesPage from './pages/BpharmaNotesPage';
 import PaymentSuccess from './pages/PaymentSuccess';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -71,7 +72,7 @@ export default function App() {
             <Route path="/notes-library" element={<><Navbar /><NotesLibrary /></>} />
             <Route path="/notes-library/btech" element={<><Navbar /><BranchSelection /></>} />
             <Route path="/notes-library/btech/:branch" element={<><Navbar /><SubjectSelection /></>} />
-            <Route path="/notes-library/bpharma" element={<><Navbar /><SubjectSelection /></>} />
+            <Route path="/notes-library/bpharma" element={<><Navbar /><BpharmaNotesPage /></>} />
             <Route path="/notes-library/:stream/:branch/:semester/:subject" element={<><Navbar /><SubjectPDFs /></>} />
             <Route path="/pricing-plans" element={<Navigate to="/" replace />} />
             <Route path="/student-dashboard" element={<><Navbar /><StudentDashboard /></>} />
