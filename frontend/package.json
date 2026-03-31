@@ -2,7 +2,7 @@
   "name": "notesdrive-frontend",
   "version": "1.0.0",
   "scripts": {
-    "start": "cd /app && node_modules/.bin/tsx server.ts"
+    "start": "cd /app && /app/node_modules/.bin/tsx server.ts"
   },
   "dependencies": {}
 }
