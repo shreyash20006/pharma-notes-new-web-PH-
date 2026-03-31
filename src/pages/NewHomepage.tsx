@@ -14,6 +14,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { LogoMinimal } from '../components/NotesDriveLogo';
+import StackedNotesSection from '../components/StackedNotesSection';
 
 export default function NewHomepage() {
   const { scrollYProgress } = useScroll();
@@ -160,6 +161,9 @@ export default function NewHomepage() {
         {/* 3D Floating Cards */}
         <FloatingCards />
       </section>
+
+      {/* Stacked Notes Animation Section */}
+      <StackedNotesSection />
 
       {/* Features Section */}
       <FeaturesSection />
