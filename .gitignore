@@ -22,3 +22,7 @@ Thumbs.db
 
 # Vite build cache
 .vite/
+-e 
+# Environment files
+*.env
+*.env.*
