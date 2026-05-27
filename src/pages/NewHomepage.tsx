@@ -1,347 +1,575 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
+  Search, 
+  Award, 
   BookOpen, 
   Sparkles, 
-  Zap, 
-  Brain,
-  ArrowRight,
-  Download,
-  Users,
-  GraduationCap,
-  Star,
-  CheckCircle2,
-  FileText,
-  Send,
-  Award
+  UploadCloud, 
+  GraduationCap, 
+  Star, 
+  CheckCircle2, 
+  ArrowRight, 
+  TrendingUp, 
+  ShieldCheck, 
+  Info,
+  Layers,
+  BookMarked,
+  Stethoscope,
+  PenTool,
+  ArrowRightLeft
 } from 'lucide-react';
 import { useFirebase } from '../context/FirebaseContext';
 
 export default function NewHomepage() {
   const { user, userProfile } = useFirebase();
+  const navigate = useNavigate();
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const heroRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Mousemove micro-interaction ambient glow tracking
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!heroRef.current) return;
+      const rect = heroRef.current.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      heroRef.current.style.background = `radial-gradient(circle at ${x}% ${y}%, rgba(173, 198, 255, 0.15) 0%, transparent 70%)`;
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  // Shortcut key listener (Ctrl+K or Cmd+K) to focus search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    // Redirect search to the pharmacy library by default or competitive library based on query
+    const query = searchQuery.toLowerCase();
+    if (query.includes('jee') || query.includes('neet') || query.includes('physics') || query.includes('biology')) {
+      navigate(`/notes-library/jeeneet?q=${encodeURIComponent(searchQuery)}`);
+    } else {
+      navigate(`/notes-library/bpharma?q=${encodeURIComponent(searchQuery)}`);
+    }
+  };
+
+  const trendingMaterials = [
+    {
+      title: 'Structural Analysis II Masterclass',
+      category: 'B.Tech Engineering',
+      pages: 124,
+      price: 499,
+      rating: '4.8 (210)',
+      colorClass: 'border-blue-500/30 hover:border-blue-500 hover:shadow-[0_0_20px_rgba(173,198,255,0.25)]',
+      accentColor: 'text-[#adc6ff]',
+      btnBg: 'bg-[#adc6ff]/10 hover:bg-[#adc6ff] text-[#adc6ff] hover:text-[#002e6a]',
+      link: '/notes-library/btech',
+      img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBegryekxoela3xATEZJXjP0gvgMkgOhkddXduyq-xJ2GOzabsDmRD2VfcgFA-O1Kt8rg_TBGnUAy57G1XhAwHMQni9vROFDdQebDPTHDPGESv-iJx5ZmS7nGa-e0vhwx0tnyGxzAMvi8ChxoCYVT3C0gUwnL--oNORRULs0Acrv38MAVkiAst_vdG7x35x-5Y7_jJGJoh9fy9uTMiVGc6kCdaF7VAMQdutUrA-0xHJMbSfaLHFDO3tX4INe7D_dYm-ZhBRowIymX1k'
+    },
+    {
+      title: 'Applied Pharmacology: Clinical Keys',
+      category: 'Pharmacy',
+      pages: 310,
+      price: 899,
+      rating: '4.9 (85)',
+      colorClass: 'border-pink-500/30 hover:border-pink-500 hover:shadow-[0_0_20px_rgba(255,176,205,0.25)]',
+      accentColor: 'text-[#ffb0cd]',
+      btnBg: 'bg-[#ffb0cd]/10 hover:bg-[#ffb0cd] text-[#ffb0cd] hover:text-[#640039]',
+      link: '/notes-library/bpharma',
+      img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCiaS4STmnjTyuPn5IylpxTGvRO213Iqs7oHW8S_z_cYzqhcddo36Qe3s_bfh2d9s1fVozPweWsW-BH8ZHI9Sq-i3Ve6qfziO3iWZ3ryiX3uGM9IsgfCTRNf4JezGHcYF5jPBr0FEZlmpSIhjt62mN-jp7M49OWeNq9LVAvTXkyb6rfB6s7NEDM4mV5q6PrHxqPadeEXg7Qif-3dVELPw1AA2UkT382iDnwzQ9gOU3ZYhYnZYUgGRWwUpQK3F8KHdmJaPuZS0AKuGYq'
+    },
+    {
+      title: 'Human Anatomy: Visual Atlas v3.0',
+      category: 'Medical (MBBS)',
+      pages: 450,
+      price: 1299,
+      rating: '5.0 (42)',
+      colorClass: 'border-purple-500/30 hover:border-purple-500 hover:shadow-[0_0_20px_rgba(208,188,255,0.25)]',
+      accentColor: 'text-[#d0bcff]',
+      btnBg: 'bg-[#d0bcff]/10 hover:bg-[#d0bcff] text-[#d0bcff] hover:text-[#3c0091]',
+      link: '/notes-library/bpharma',
+      img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCvl1TG2Yn68TDPm8GIq20VJ16_m1B9N5wRIxq6bqkbq_6-6h_WljaZtIuhFE1PIPf1C7WYqE3RWkvxgZvKR0lwGT_RU_keWwj8uebPa1AyxvC4Ia_eK1YG5IxC4lOP6Y21E9r0j50ASF0LmlFmtVm4-EDRH1s-rVHPaiUtSnYjWREMq4MqNh3xrstS8dWTByv-5u-whUyVFgGSKjDJW9wrdHDk95tlAdCnOmcSFBp5bixi3MvnNxXdms2IGGwHsWtpC9Oi9GlbPuTe'
+    },
+    {
+      title: 'Python for Engineers: Applied Logic',
+      category: 'Engineering (B.Tech)',
+      pages: 280,
+      price: 349,
+      rating: '4.7 (156)',
+      colorClass: 'border-blue-500/30 hover:border-blue-500 hover:shadow-[0_0_20px_rgba(173,198,255,0.25)]',
+      accentColor: 'text-[#adc6ff]',
+      btnBg: 'bg-[#adc6ff]/10 hover:bg-[#adc6ff] text-[#adc6ff] hover:text-[#002e6a]',
+      link: '/notes-library/btech',
+      img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuACAChT8dqZiskQv_7hEZpg6Wh7fYEj5lXMQO2XPPKMIS7gCFR6O9mIFnrmCJRIyHxPyR70BJWFTVD_7ImheuEiPTJ-l_yvOK_JnfaXQhNUn2w9zicz5TCAjtKJgOh6tewtz5gaW17FOPAB2z4HLpYO8spXvvuKYEE7twJwblitXDNSIw1Y704-AEMKxLB-zWIyqnnCF1xKfl3BUqa53Z875lynqkS4ckJ5tydt7WOFuCOnUBWRD678sRB2iGtOTISu5c-qDjNVr_AS'
+    },
+    {
+      title: 'Organic Chemistry: The Reaction Core',
+      category: 'Reference / Pharmacy',
+      pages: 520,
+      price: 749,
+      rating: '4.9 (92)',
+      colorClass: 'border-pink-500/30 hover:border-pink-500 hover:shadow-[0_0_20px_rgba(255,176,205,0.25)]',
+      accentColor: 'text-[#ffb0cd]',
+      btnBg: 'bg-[#ffb0cd]/10 hover:bg-[#ffb0cd] text-[#ffb0cd] hover:text-[#640039]',
+      link: '/notes-library/bpharma',
+      img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDx2mAxjgP5Sd-W-ON0fpLyQpxIO2iHuBuFKUD2kghN0zFxtVpwgPlvHcWJl9W4NYadNTRjA4e5b3fSiHj6TBMeRh99L5AwYBpzfSRU7Bsv2y06_sIxHz-x_gGjGQr07j_t9qf6cy3aBHxyG_9kmEfVEQTqjEybuVlBjV26ocZmvRW1rl7XCoQQBOJBMjXxPQysgYen60bVE1ypp6EmoE8dY2Jq149X5hpbSvKFAXNZoQAi53nBtRhrCByg_nievd18QP2OtSowYREl'
+    }
+  ];
 
   return (
-    <div className="min-h-screen bg-[#0D1117] text-white relative overflow-hidden font-sans selection:bg-blue-600/30">
+    <div className="min-h-screen bg-[#0D1117] text-[#e1e2ec] relative overflow-hidden font-sans selection:bg-blue-600/30 pt-20">
       
-      {/* Decorative Neon Blurs */}
-      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[140px] pointer-events-none -z-10" />
-      <div className="absolute top-1/3 right-1/4 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[160px] pointer-events-none -z-10" />
+      {/* Decorative radial lighting backdrops */}
+      <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-blue-600/5 rounded-full blur-[140px] pointer-events-none -z-10" />
+      <div className="absolute top-1/3 right-1/4 w-[600px] h-[600px] bg-purple-600/5 rounded-full blur-[160px] pointer-events-none -z-10" />
       <div className="absolute bottom-10 left-10 w-[400px] h-[400px] bg-pink-500/5 rounded-full blur-[120px] pointer-events-none -z-10" />
 
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 px-4 max-w-7xl mx-auto flex flex-col items-center">
-        
-        {/* Floating Interactive Badge */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="mb-8"
-        >
-          <div className="px-5 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl flex items-center gap-2 shadow-[0_0_20px_rgba(59,130,246,0.15)]">
+      <section 
+        ref={heroRef}
+        className="relative min-h-[640px] flex flex-col items-center justify-center text-center px-4 overflow-hidden border-b border-white/5 bg-radial-gradient"
+      >
+        <div className="max-w-4xl mx-auto space-y-8 z-10">
+          
+          {/* Tagline Badge */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 backdrop-blur-xl rounded-full shadow-[0_0_20px_rgba(173,198,255,0.15)]"
+          >
             <Sparkles className="w-4 h-4 text-blue-400 animate-pulse" />
             <span className="text-xs font-bold text-gray-300 uppercase tracking-widest">
-              Premium B.Pharma & JEE/NEET Hub
+              High-Fidelity Cyber-Library & Bookstore
             </span>
-          </div>
-        </motion.div>
+          </motion.div>
 
-        {/* Main Hero Header */}
-        <div className="text-center max-w-4xl mx-auto mb-10">
-          <motion.h1
+          {/* Heading */}
+          <motion.h1 
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.1 }}
-            className="text-5xl md:text-7xl font-black tracking-tight leading-none mb-6"
+            transition={{ duration: 0.6 }}
+            className="text-5xl md:text-7xl font-black leading-tight tracking-tight text-white"
             style={{ fontFamily: "'Space Grotesk', sans-serif" }}
           >
-            Your Study Notes, <br />
-            <span className="bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent filter drop-shadow-[0_0_30px_rgba(139,92,246,0.3)]">
-              All in One Place
-            </span>
+            The Pulse of <span className="bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent filter drop-shadow-[0_0_35px_rgba(173,198,255,0.3)]">Modern Academia.</span>
           </motion.h1>
 
-          <motion.p
+          {/* Description */}
+          <motion.p 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed"
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="text-base md:text-lg text-gray-400 max-w-2xl mx-auto leading-relaxed"
           >
-            Master B.Pharma curriculum and ace IIT-JEE & NEET competitive exams with premium, high-quality handwritten study modules.
+            Access and list high-fidelity study materials curated by top-performing students and verified professionals. From engineering algorithms to clinical case sheets and eBooks.
           </motion.p>
-        </div>
 
-        {/* Call to Actions */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.3 }}
-          className="flex flex-col sm:flex-row gap-4 mb-16 z-10"
-        >
-          <Link to="/notes-library/bpharma">
-            <motion.button
-              whileHover={{ scale: 1.05, y: -3 }}
-              whileTap={{ scale: 0.98 }}
-              className="px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-500 hover:to-blue-700 text-white rounded-2xl font-bold text-base flex items-center gap-2 shadow-[0_0_30px_rgba(59,130,246,0.3)] transition-all"
-            >
-              Browse B.Pharma Notes
-              <ArrowRight className="w-5 h-5" />
-            </motion.button>
-          </Link>
+          {/* Search Engine Input Bar */}
+          <motion.form 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            onSubmit={handleSearchSubmit}
+            className="w-full max-w-2xl mx-auto group"
+          >
+            <div className="relative p-[1px] rounded-full overflow-hidden transition-all duration-500 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 group-hover:shadow-[0_0_30px_rgba(173,198,255,0.35)]">
+              <div className="flex items-center bg-[#191b23] rounded-full px-6 py-4">
+                <Search className="w-5 h-5 text-gray-500" />
+                <input 
+                  ref={searchInputRef}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="bg-transparent border-none focus:ring-0 focus:outline-none w-full text-white placeholder:text-gray-500 text-sm px-4 font-semibold" 
+                  placeholder="Search organic chemistry mechanisms, B.Tech codex, MBBS blueprints..." 
+                  type="text"
+                />
+                <kbd className="hidden md:inline-flex items-center gap-1 px-2 py-1 bg-white/5 border border-white/10 rounded text-[9px] font-bold text-gray-500">
+                  Ctrl K
+                </kbd>
+              </div>
+            </div>
+          </motion.form>
 
-          <Link to="/notes-library/jeeneet">
-            <motion.button
-              whileHover={{ scale: 1.05, y: -3 }}
-              whileTap={{ scale: 0.98 }}
-              className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white rounded-2xl font-bold text-base flex items-center gap-2 shadow-[0_0_30px_rgba(139,92,246,0.3)] transition-all"
-            >
-              Browse JEE / NEET Prep
-              <Award className="w-5 h-5" />
-            </motion.button>
-          </Link>
+          {/* Trending Pills */}
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="flex flex-wrap justify-center gap-3 items-center text-xs pt-2"
+          >
+            <span className="text-gray-500 font-bold uppercase tracking-wider">Trending:</span>
+            <button onClick={() => setSearchQuery('Fluid Dynamics')} className="px-3.5 py-1.5 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:border-blue-500/50 transition-colors">Fluid Dynamics</button>
+            <button onClick={() => setSearchQuery('Pharmacology')} className="px-3.5 py-1.5 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:border-pink-500/50 transition-colors">Pathology Mnemonics</button>
+            <button onClick={() => setSearchQuery('GATE')} className="px-3.5 py-1.5 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:border-purple-500/50 transition-colors">GATE 2026</button>
+          </motion.div>
 
-          {!userProfile?.isPremium && (
-            <Link to="/premium">
-              <motion.button
-                whileHover={{ scale: 1.05, y: -3 }}
-                whileTap={{ scale: 0.98 }}
-                className="px-8 py-4 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 text-white rounded-2xl font-bold text-base flex items-center gap-2 backdrop-blur-xl transition-all"
-              >
-                Get Lifetime Pro (₹499)
-                <Star className="w-4 h-4 text-yellow-400 fill-yellow-400 animate-pulse" />
-              </motion.button>
-            </Link>
-          )}
-        </motion.div>
-
-        {/* Floating Semester Numbers Preview */}
-        <div className="w-full max-w-5xl grid grid-cols-4 md:grid-cols-8 gap-4 mb-24 px-4">
-          {[1, 2, 3, 4, 5, 6, 7, 8].map((sem, idx) => (
-            <Link key={sem} to={`/notes-library/bpharma?sem=${sem}`}>
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: idx * 0.05 }}
-                whileHover={{ scale: 1.1, y: -5, borderColor: 'rgba(59,130,246,0.5)' }}
-                className="aspect-square rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md flex flex-col items-center justify-center cursor-pointer transition-all hover:bg-gradient-to-br hover:from-blue-600/10 hover:to-purple-600/10 group"
-              >
-                <span className="text-2xl md:text-3xl font-black text-blue-400 group-hover:text-white transition-colors">
-                  S{sem}
-                </span>
-                <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider group-hover:text-blue-300 transition-colors mt-0.5">
-                  Sem
-                </span>
-              </motion.div>
-            </Link>
-          ))}
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-16 bg-white/[0.02] border-y border-white/5 relative">
-        <div className="max-w-6xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8">
-          {[
-            { icon: FileText, value: '800+ Notes', label: 'Precise Handouts & Formula Sheets' },
-            { icon: BookOpen, value: 'Dual Hub', label: 'B.Pharma + JEE/NEET Prep' },
-            { icon: Users, value: '5,000+ Students', label: 'Active Learners Daily' },
-            { icon: Star, value: '₹499 Lifetime', label: 'Unlock Everything Forever' },
-          ].map((stat, i) => (
-            <motion.div
-              key={i}
-              whileInView={{ opacity: 1, y: 0 }}
-              initial={{ opacity: 0, y: 20 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: i * 0.1 }}
-              className="text-center group"
-            >
-              <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center mx-auto mb-3 border border-blue-500/20 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
-                <stat.icon className="w-6 h-6 text-blue-400 group-hover:text-white transition-colors" />
-              </div>
-              <div className="text-3xl font-extrabold mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                {stat.value}
-              </div>
-              <div className="text-xs text-gray-400 font-semibold">{stat.label}</div>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* Features Grid */}
-      <section className="py-24 px-6 max-w-7xl mx-auto">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="text-4xl md:text-5xl font-black mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-            Engineered for <span className="text-blue-400">Excellent Grades</span>
+      {/* Domain Hubs (Stream Selector Cards) */}
+      <section className="py-24 max-w-7xl mx-auto px-6">
+        <div className="mb-12">
+          <h2 className="text-3xl md:text-4xl font-black text-white mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+            Explore Domain Hubs
           </h2>
-          <p className="text-gray-400">
-            Powerful features designed to make your study life easier, whether in college or preparing for competitive entrance.
+          <p className="text-gray-400 text-sm md:text-base">
+            Monetized and community-verified files categorized cleanly by discipline.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
-          {[
-            {
-              icon: BookOpen,
-              title: 'Curated PDFs & Blueprints',
-              description: 'Semester-wise notes structured unit-by-unit according to PCI syllabus, and competitive notes for IIT-JEE/NEET.'
-            },
-            {
-              icon: Brain,
-              title: 'AI Study Assistant',
-              description: 'Summarize heavy organic chemistry, biology, or mechanics chapters in seconds using advanced AI.'
-            },
-            {
-              icon: Zap,
-              title: 'Instant Checkout SDK',
-              description: 'Secure billing through Cashfree Payment Gateway with instant lifetime upgrades.'
-            }
-          ].map((feat, i) => (
-            <motion.div
-              key={i}
-              whileInView={{ opacity: 1, y: 0 }}
-              initial={{ opacity: 0, y: 30 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: i * 0.15 }}
-              whileHover={{ y: -8 }}
-              className="p-8 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-xl relative group overflow-hidden transition-all duration-300"
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          
+          {/* Engineering */}
+          <Link to="/notes-library/btech" className="group block h-[400px]">
+            <motion.div 
+              whileHover={{ y: -6 }}
+              className="relative h-full overflow-hidden bg-[#10131a] rounded-3xl p-8 flex flex-col justify-between border border-white/10 hover:border-blue-500/30 transition-all hover:shadow-[0_0_30px_rgba(173,198,255,0.08)] group"
             >
-              <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-blue-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-              
-              <div className="w-14 h-14 bg-blue-500/10 rounded-2xl flex items-center justify-center mb-6 border border-blue-500/20">
-                <feat.icon className="w-7 h-7 text-blue-400" />
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent z-0" />
+              <img 
+                alt="Engineering Hub" 
+                className="absolute right-0 top-0 h-full w-2/3 object-cover opacity-25 group-hover:scale-105 group-hover:opacity-40 transition-all duration-700 pointer-events-none rounded-l-[3rem]" 
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDO8cN6AFylTHCKcnuLLmWWTHAGD1cUS--BF9mF5lmZLG9o8wnvifphHCPyS5AgeF0MgE6Uo5KSsCcMo7L8_2aYF0I9uHHMG09ga_Co4Izab1Scew0kt5oagzEvqAIa1wtQJYzDD88VXRWPKabnLE3cvjoIzS77hK5ypfBC5Qnq_uSC9TwhhZ04NfSZnh7Pm85zMD_TeD411NaMiQp5NgJViE8MuVwJ4WyFZNUhBKU5I-xdFRo-h9bjaFVQC1IJ8N4vdTA3gONdia9h"
+              />
+              <div className="relative z-10 flex justify-between items-start">
+                <span className="w-12 h-12 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-center text-blue-400">
+                  <Layers className="w-6 h-6" />
+                </span>
+                <span className="px-2.5 py-1 bg-blue-500/20 border border-blue-500/30 text-blue-400 text-[10px] font-bold rounded-lg uppercase tracking-wider">
+                  B.Tech
+                </span>
               </div>
-              <h3 className="text-2xl font-bold mb-3">{feat.title}</h3>
-              <p className="text-gray-400 text-sm leading-relaxed">{feat.description}</p>
+              <div className="relative z-10">
+                <h3 className="text-2xl font-black text-white mb-2 leading-none" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                  Engineering Store
+                </h3>
+                <p className="text-gray-400 text-xs line-clamp-2 leading-relaxed mb-4">
+                  Calculus to Machine Learning: Premium study guides and test codes for modern engineering tracks.
+                </p>
+                <div className="flex items-center gap-2 text-blue-400 font-bold text-xs group-hover:gap-4 transition-all">
+                  <span>Enter Hub</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </div>
+              </div>
             </motion.div>
+          </Link>
+
+          {/* Medical */}
+          <Link to="/notes-library/bpharma" className="group block h-[400px]">
+            <motion.div 
+              whileHover={{ y: -6 }}
+              className="relative h-full overflow-hidden bg-[#10131a] rounded-3xl p-8 flex flex-col justify-between border border-white/10 hover:border-pink-500/30 transition-all hover:shadow-[0_0_30px_rgba(255,176,205,0.08)] group"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 to-transparent z-0" />
+              <img 
+                alt="Medical Hub" 
+                className="absolute right-0 top-0 h-full w-2/3 object-cover opacity-25 group-hover:scale-105 group-hover:opacity-40 transition-all duration-700 pointer-events-none rounded-l-[3rem]" 
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCGGinlXeKSJkipfvYOgxlb1LPBrpzgYscUGPKgOHCuInsUuGQl7s3kKB8yolJJEwOofqdcf-PTKt3Mvwx735Nwid84h1NXvia_2meZred0PZ_kOcbrmMCJkh-387gHNPTmCCE6ea3oRqIvU8QWs_HfsQ8QRS_FT0C_HASWX8L9VY25PTc4xX5CWAOY-39Gjzxx7CyvRxM1aGC9DAeuBRy80EmsXljlSBaEBh9z5omzfRmUgK7w1Ip0JtfHOk_YIBRC1IOnqKGFRqP-"
+              />
+              <div className="relative z-10 flex justify-between items-start">
+                <span className="w-12 h-12 bg-pink-500/10 border border-pink-500/20 rounded-2xl flex items-center justify-center text-pink-400">
+                  <Stethoscope className="w-6 h-6" />
+                </span>
+                <span className="px-2.5 py-1 bg-pink-500/20 border border-pink-500/30 text-pink-400 text-[10px] font-bold rounded-lg uppercase tracking-wider">
+                  MBBS / BDS
+                </span>
+              </div>
+              <div className="relative z-10">
+                <h3 className="text-2xl font-black text-white mb-2 leading-none" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                  Medical E-Store
+                </h3>
+                <p className="text-gray-400 text-xs line-clamp-2 leading-relaxed mb-4">
+                  Visual anatomy atlas guides, pathology flashcards, diagnostics files, and clinical keys.
+                </p>
+                <div className="flex items-center gap-2 text-pink-400 font-bold text-xs group-hover:gap-4 transition-all">
+                  <span>Enter Hub</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </div>
+              </div>
+            </motion.div>
+          </Link>
+
+          {/* Competitive Exams */}
+          <Link to="/notes-library/jeeneet" className="group block h-[400px]">
+            <motion.div 
+              whileHover={{ y: -6 }}
+              className="relative h-full overflow-hidden bg-[#10131a] rounded-3xl p-8 flex flex-col justify-between border border-white/10 hover:border-purple-500/30 transition-all hover:shadow-[0_0_30px_rgba(208,188,255,0.08)] group"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent z-0" />
+              <img 
+                alt="Competitive Hub" 
+                className="absolute right-0 top-0 h-full w-2/3 object-cover opacity-25 group-hover:scale-105 group-hover:opacity-40 transition-all duration-700 pointer-events-none rounded-l-[3rem]" 
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDsbd5awmCqvVggyFbS3aJYgt6jWjPfrAPXWCRkWRnPb7dC7qZOUhi_4UH8qup6drwb3PJGnJAEXtcpGx80mbHgPNGnGjrVpi40ToI7XvFglrKKSXyFUgo3-8Cn1udnxFDieB45Tc-7OrExoor-rtBVmB9MHvZrRHnFoeS4Um5vsjIfTB_nbb1imuxzByyKxuIDbCDYidLSt7brBban2uNfI9ExrS5tx0maEnsrXmpCW0MwOs_LviYFzPQBAVQURgTeXelsj8UraNZR"
+              />
+              <div className="relative z-10 flex justify-between items-start">
+                <span className="w-12 h-12 bg-purple-500/10 border border-purple-500/20 rounded-2xl flex items-center justify-center text-purple-400">
+                  <Award className="w-6 h-6" />
+                </span>
+                <span className="px-2.5 py-1 bg-purple-500/20 border border-purple-500/30 text-purple-400 text-[10px] font-bold rounded-lg uppercase tracking-wider">
+                  JEE / NEET
+                </span>
+              </div>
+              <div className="relative z-10">
+                <h3 className="text-2xl font-black text-white mb-2 leading-none" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                  Competitive Prep
+                </h3>
+                <p className="text-gray-400 text-xs line-clamp-2 leading-relaxed mb-4">
+                  Formula boards, organic mechanism maps, solved question sets, and strategy cheat sheets.
+                </p>
+                <div className="flex items-center gap-2 text-purple-400 font-bold text-xs group-hover:gap-4 transition-all">
+                  <span>Enter Hub</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </div>
+              </div>
+            </motion.div>
+          </Link>
+
+          {/* Reference Books */}
+          <Link to="/notes-library/bpharma" className="group block h-[400px]">
+            <motion.div 
+              whileHover={{ y: -6 }}
+              className="relative h-full overflow-hidden bg-[#10131a] rounded-3xl p-8 flex flex-col justify-between border border-white/10 hover:border-emerald-500/30 transition-all hover:shadow-[0_0_30px_rgba(16,185,129,0.08)] group"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent z-0" />
+              <img 
+                alt="Reference Hub" 
+                className="absolute right-0 top-0 h-full w-2/3 object-cover opacity-25 group-hover:scale-105 group-hover:opacity-40 transition-all duration-700 pointer-events-none rounded-l-[3rem]" 
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-bA567IEoQBtRwewgKabudbUuXba-63EkSsoD4DcI3JKRmGWrnTTRCVTDwagbWgAbuP9oa-MfoEwAUy1tDiWWz-WiXIB7oavOljcJYjyJek0W5pzWfnaBdEmltsyvXGB2RBF9dQDZByAghPfdxvldYeRteUwKfUqRYxiEtTkA7IEgfyuY1bgAjqTaOmXAG-zI8K6LfGzEnZ69vZICeld2XU99ynFkFAhVLZyw0uEZI1zqyZyFUrerhJioNFZ0NHAgpPdPosJH8emO"
+              />
+              <div className="relative z-10 flex justify-between items-start">
+                <span className="w-12 h-12 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center justify-center text-emerald-400">
+                  <BookOpen className="w-6 h-6" />
+                </span>
+                <span className="px-2.5 py-1 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold rounded-lg uppercase tracking-wider">
+                  B.Pharma / Global
+                </span>
+              </div>
+              <div className="relative z-10">
+                <h3 className="text-2xl font-black text-white mb-2 leading-none" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                  Reference Library
+                </h3>
+                <p className="text-gray-400 text-xs line-clamp-2 leading-relaxed mb-4">
+                  Curriculum textbooks aligned with PCI specifications, chemistry manuals, and guides.
+                </p>
+                <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs group-hover:gap-4 transition-all">
+                  <span>Enter Hub</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </div>
+              </div>
+            </motion.div>
+          </Link>
+
+        </div>
+      </section>
+
+      {/* Bento Grid Stats / Contributor Networks */}
+      <section className="py-24 border-y border-white/5 bg-[#0A0D14]">
+        <div className="max-w-7xl mx-auto px-6">
+          
+          <div className="flex flex-col md:flex-row justify-between items-end gap-6 mb-16">
+            <div className="max-w-2xl">
+              <h2 className="text-3xl md:text-4xl font-black text-white mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                Elite Contributors Network
+              </h2>
+              <p className="text-gray-400 text-sm md:text-base leading-relaxed">
+                Join the top academic authors. Upload your handwritten notes or custom textbooks, set a custom price tag, and sell directly to students globally with instant payouts!
+              </p>
+            </div>
+            <Link to="/upload">
+              <motion.button 
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.98 }}
+                className="bg-blue-600 text-white font-bold text-sm px-8 py-3.5 rounded-xl hover:bg-blue-500 transition-colors shadow-lg shadow-blue-600/20 inline-flex items-center gap-2"
+              >
+                <UploadCloud className="w-4 h-4" />
+                Become a Seller
+              </motion.button>
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            
+            {/* Dr Arjun Profile */}
+            <div className="bg-[#10131a]/60 border border-blue-500/20 p-8 rounded-3xl relative overflow-hidden flex flex-col justify-between">
+              <div className="absolute inset-0 bg-blue-500/5 pointer-events-none" />
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-blue-500 flex-shrink-0">
+                  <img 
+                    alt="Top Contributor" 
+                    className="w-full h-full object-cover" 
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuDTTk5yw3YlHrPnJURYjHrVLhd3dwCfOX1MwvBtrhwbBZ3BxDdAc38u1uavAJdIIT6Mo9QZQOJg22tOGvrAcGXJ6PkaJCxqqS5fMvQZD7fv0XOIJRcs36wEqX9yCWdm9YGkCoD8T3_hHq31x294sqY666DEPWuORaKt5LRXySffvC14i5mOvqwE8RPGGgDfygQ6WBlFLpPOYgcu8Z2OeuKdvwgrSVB5vDC_L7On-oGimqZlJ-su41TaMQF7SWZztb4Ue7hwPpbpMn3T"
+                  />
+                </div>
+                <div>
+                  <h4 className="text-xl font-bold text-white leading-none">Dr. Arjun V.</h4>
+                  <p className="text-xs text-blue-400 font-bold mt-1.5">Platinum Seller · Medical</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div className="p-3 bg-white/5 rounded-xl border border-white/5">
+                  <p className="text-blue-400 font-bold text-lg leading-none">₹1.2M</p>
+                  <p className="text-[9px] text-gray-500 uppercase font-extrabold tracking-wider mt-1">Earnings</p>
+                </div>
+                <div className="p-3 bg-white/5 rounded-xl border border-white/5">
+                  <p className="text-white font-bold text-lg leading-none">4.2k</p>
+                  <p className="text-[9px] text-gray-500 uppercase font-extrabold tracking-wider mt-1">Books</p>
+                </div>
+                <div className="p-3 bg-white/5 rounded-xl border border-white/5 flex flex-col justify-center">
+                  <div className="flex items-center justify-center text-yellow-400 gap-0.5">
+                    <Star className="w-3.5 h-3.5 fill-yellow-400" />
+                    <span className="font-bold text-sm">4.9</span>
+                  </div>
+                  <p className="text-[9px] text-gray-500 uppercase font-extrabold tracking-wider mt-1">Rating</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Marketplace metrics */}
+            <div className="bg-[#10131a]/60 border border-white/10 p-8 rounded-3xl flex flex-col justify-center">
+              <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1.5 block">Live Marketplace Stats</span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl font-extrabold text-blue-400" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>85k+</span>
+                <span className="text-gray-400 text-sm">Materials Listed</span>
+              </div>
+              <div className="mt-6 flex items-center gap-1.5 text-emerald-400 text-xs font-bold">
+                <TrendingUp className="w-4 h-4" />
+                <span>12% growth this month</span>
+              </div>
+            </div>
+
+            {/* Secure payouts */}
+            <div className="bg-[#10131a]/60 border border-white/10 p-8 rounded-3xl flex flex-col justify-center">
+              <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1.5 block">Total Seller Payouts</span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl font-extrabold text-pink-400" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>₹4.8Cr</span>
+                <span className="text-gray-400 text-sm">Disbursed</span>
+              </div>
+              <div className="mt-6 flex items-center gap-1.5 text-blue-400 text-xs font-bold">
+                <ShieldCheck className="w-4 h-4" />
+                <span>Instant payouts powered by Cashfree</span>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      {/* Featured / Trending Materials Cards */}
+      <section className="py-24 max-w-7xl mx-auto px-6">
+        
+        <div className="flex justify-between items-end mb-12">
+          <div>
+            <h2 className="text-3xl md:text-4xl font-black text-white mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+              Trending E-Books & Handouts
+            </h2>
+            <p className="text-gray-400 text-sm md:text-base">
+              Explore bestsellers highly valued by high-scoring academic cohorts.
+            </p>
+          </div>
+          <Link to="/notes-library/bpharma" className="text-blue-400 text-xs font-bold hover:underline flex items-center gap-1">
+            View All <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+          {trendingMaterials.map((material, i) => (
+            <div 
+              key={i}
+              onClick={() => navigate(material.link)}
+              className="group cursor-pointer flex flex-col justify-between h-full"
+            >
+              <div>
+                <div className={`aspect-[3/4] rounded-2xl overflow-hidden border bg-[#161B22] relative transition-all duration-300 transform group-hover:scale-[1.02] ${material.colorClass}`}>
+                  <img 
+                    alt={material.title} 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500 pointer-events-none" 
+                    src={material.img}
+                  />
+                  {i === 0 && (
+                    <div className="absolute top-2.5 right-2.5 bg-blue-600 text-white text-[8px] font-black uppercase tracking-wider px-2 py-1 rounded shadow-md">
+                      BESTSELLER
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-4 space-y-1">
+                  <h4 className="text-sm font-bold text-white line-clamp-1 group-hover:text-blue-400 transition-colors leading-snug">
+                    {material.title}
+                  </h4>
+                  <p className="text-[11px] text-gray-500 font-medium">
+                    {material.category} · {material.pages} Pages
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center pt-3 mt-auto">
+                <span className="font-extrabold text-sm text-white">₹{material.price}</span>
+                <div className="flex items-center text-[10px] text-yellow-400 font-bold gap-0.5">
+                  <Star className="w-3.5 h-3.5 fill-yellow-400" />
+                  <span>{material.rating}</span>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
+
       </section>
 
-      {/* Semester Selector Grid Section */}
-      <section className="py-20 bg-gradient-to-b from-transparent to-[#161B22]/40 border-t border-white/5 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              Explore B.Pharma By <span className="text-purple-400">Semester</span>
-            </h2>
-            <p className="text-gray-400 max-w-xl mx-auto">
-              Select your semester to access tailored hand-outs, university blueprints, syllabus catalogs, and notes.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
-              <Link key={sem} to={`/notes-library/bpharma?sem=${sem}`}>
-                <motion.div
-                  whileHover={{ scale: 1.03, y: -4, borderColor: 'rgba(139,92,246,0.4)' }}
-                  className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md flex items-center gap-4 cursor-pointer transition-all hover:bg-gradient-to-tr hover:from-blue-600/5 hover:to-purple-600/5"
-                >
-                  <div className="w-12 h-12 rounded-xl bg-purple-500/15 flex items-center justify-center font-black text-lg text-purple-400 border border-purple-500/20">
-                    S{sem}
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-white">Semester {sem}</h4>
-                    <p className="text-xs text-gray-500">View Active Subject Notes</p>
-                  </div>
-                  <ArrowRight className="w-4 h-4 text-gray-600 ml-auto group-hover:translate-x-1 transition-transform" />
-                </motion.div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* JEE / NEET Exam Portal Grid Section */}
-      <section className="py-20 bg-gradient-to-b from-[#161B22]/40 to-transparent border-t border-white/5 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              Explore <span className="text-blue-400">JEE & NEET Prep</span>
-            </h2>
-            <p className="text-gray-400 max-w-xl mx-auto">
-              Select your competitive goal and subject to access top-tier study notes, handwritten cards, and formulas.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {/* JEE card */}
-            <Link to="/notes-library/jeeneet?goal=JEE">
-              <motion.div
-                whileHover={{ scale: 1.03, y: -4, borderColor: 'rgba(59,130,246,0.4)' }}
-                className="p-8 rounded-3xl bg-gradient-to-br from-blue-950/20 to-slate-950 border border-white/10 backdrop-blur-md flex flex-col justify-between h-64 shadow-xl cursor-pointer group"
-              >
-                <div>
-                  <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center font-black text-lg text-blue-400 border border-blue-500/20 mb-4 group-hover:bg-blue-600 group-hover:text-white transition-all">
-                    JEE
-                  </div>
-                  <h3 className="text-2xl font-black mb-2 group-hover:text-blue-400 transition-colors">IIT-JEE Mains & Advanced</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed">Crack Engineering with Class 11 & 12 Physics, Chemistry, and Mathematics formula sheets & revision notes.</p>
-                </div>
-                <div className="flex items-center text-blue-400 font-bold text-sm mt-4">
-                  Browse JEE Notes <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-2 transition-transform" />
-                </div>
-              </motion.div>
-            </Link>
-
-            {/* NEET card */}
-            <Link to="/notes-library/jeeneet?goal=NEET">
-              <motion.div
-                whileHover={{ scale: 1.03, y: -4, borderColor: 'rgba(236,72,153,0.4)' }}
-                className="p-8 rounded-3xl bg-gradient-to-br from-pink-950/20 to-slate-950 border border-white/10 backdrop-blur-md flex flex-col justify-between h-64 shadow-xl cursor-pointer group"
-              >
-                <div>
-                  <div className="w-12 h-12 rounded-xl bg-pink-500/10 flex items-center justify-center font-black text-lg text-pink-400 border border-pink-500/20 mb-4 group-hover:bg-pink-600 group-hover:text-white transition-all">
-                    NEET
-                  </div>
-                  <h3 className="text-2xl font-black mb-2 group-hover:text-pink-400 transition-colors">NEET UG Medical Prep</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed">Ace Medical entrance with Class 11 & 12 Physics, Chemistry, and deep-dive Biology handwritten modules.</p>
-                </div>
-                <div className="flex items-center text-pink-400 font-bold text-sm mt-4">
-                  Browse NEET Notes <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-2 transition-transform" />
-                </div>
-              </motion.div>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Premium Lifetime Upgrade CTA Section */}
+      {/* Premium Lifetime Upgrade CTA Banner */}
       <section className="py-24 px-6 max-w-5xl mx-auto text-center relative z-10">
         <motion.div
           whileInView={{ opacity: 1, scale: 1 }}
           initial={{ opacity: 0, scale: 0.95 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="p-12 md:p-16 rounded-[3rem] bg-gradient-to-br from-[#1E293B] via-[#0F172A] to-[#1E293B] border border-blue-500/30 relative overflow-hidden shadow-[0_0_50px_rgba(59,130,246,0.2)]"
+          className="p-12 md:p-16 rounded-[3rem] bg-gradient-to-br from-[#1E293B] via-[#0F172A] to-[#1E293B] border border-blue-500/30 relative overflow-hidden shadow-[0_0_50px_rgba(59,130,246,0.2)] animate-pulse-slow"
         >
           {/* Top highlight badge */}
-          <div className="absolute top-0 right-1/2 translate-x-1/2 bg-blue-600 text-white px-8 py-2.5 rounded-b-3xl font-bold uppercase text-[10px] tracking-widest shadow-md">
-            RECOMMENDED FOR GPAT, JEE & NEET EXAMS
+          <div className="absolute top-0 right-1/2 translate-x-1/2 bg-blue-600 text-white px-8 py-2.5 rounded-b-3xl font-bold uppercase text-[9px] tracking-widest shadow-md">
+            RECOMMENDED FOR GPAT, JEE & NEET COHORTS
           </div>
 
           <div className="max-w-2xl mx-auto flex flex-col items-center pt-4">
             <Star className="w-16 h-16 text-yellow-400 fill-yellow-400 mb-6 animate-pulse" />
             <h2 className="text-4xl md:text-5xl font-black text-white mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              Unlock All Study Resources
+              Unlock All Premium Resources
             </h2>
-            <p className="text-gray-400 text-base md:text-lg mb-8 leading-relaxed">
-              Get lifetime access to the entire study library containing all B.Pharma semesters, and JEE/NEET revision cards, formula handouts, and premium study materials for a single one-time upgrade fee.
+            <p className="text-gray-400 text-sm md:text-base mb-8 leading-relaxed max-w-xl">
+              Get lifetime access to the entire multi-disciplinary study library containing all B.Tech branches, B.Pharma semesters, and JEE/NEET handwritten modules.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center gap-6 mb-10">
               <div className="text-left">
-                <span className="text-xs text-gray-500 line-through block font-bold">REGULAR PRICE: ₹1,499</span>
-                <span className="text-5xl font-black text-blue-400">₹499 <span className="text-base text-gray-400 font-medium">/ Lifetime</span></span>
+                <span className="text-[10px] text-gray-500 line-through block font-bold">REGULAR PRICE: ₹1,499</span>
+                <span className="text-4xl md:text-5xl font-black text-blue-400">₹499 <span className="text-xs text-gray-400 font-medium">/ Lifetime</span></span>
               </div>
               <div className="h-[2px] w-12 sm:h-12 sm:w-[2px] bg-white/10" />
               <ul className="text-left space-y-2">
                 {[
                   '100% Secure Checkout via Cashfree',
-                  'Unlimited High-Quality Note Downloads',
+                  'Unlimited Premium eBook Downloads',
                   'Access both Pharmacy & Engineering/Medical Hubs',
-                  'Exclusive Verified Handouts'
+                  'Zero Subscription Fees'
                 ].map((item, i) => (
-                  <li key={i} className="flex items-center gap-2 text-sm text-gray-300 font-medium">
+                  <li key={i} className="flex items-center gap-2 text-xs text-gray-300 font-bold">
                     <CheckCircle2 className="w-4 h-4 text-blue-400" />
                     {item}
                   </li>
@@ -350,7 +578,7 @@ export default function NewHomepage() {
             </div>
 
             {userProfile?.is_premium ? (
-              <div className="px-8 py-4 bg-blue-500/10 border border-blue-500/30 text-blue-400 rounded-2xl font-bold flex items-center gap-2">
+              <div className="px-8 py-4 bg-blue-500/10 border border-blue-500/30 text-blue-400 rounded-2xl font-bold flex items-center gap-2 text-sm shadow-[0_0_20px_rgba(59,130,246,0.15)]">
                 <CheckCircle2 className="w-5 h-5 text-blue-400" />
                 Active Premium Access (Lifetime Pro)
               </div>
@@ -359,9 +587,9 @@ export default function NewHomepage() {
                 <motion.button
                   whileHover={{ scale: 1.05, y: -4 }}
                   whileTap={{ scale: 0.95 }}
-                  className="px-10 py-5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold text-xl flex items-center gap-3 shadow-[0_0_30px_rgba(59,130,246,0.4)]"
+                  className="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-base flex items-center gap-2 shadow-[0_0_30px_rgba(59,130,246,0.4)]"
                 >
-                  <Star className="w-6 h-6 text-yellow-300 fill-yellow-300" />
+                  <Star className="w-5 h-5 text-yellow-300 fill-yellow-300" />
                   Upgrade to Pro Now
                 </motion.button>
               </Link>
@@ -370,11 +598,11 @@ export default function NewHomepage() {
         </motion.div>
       </section>
 
-      {/* Community / Footer Telegram Promo */}
+      {/* Community Channels / Footer promos */}
       <section className="py-16 px-6 border-t border-white/5 bg-[#161B22]/10 max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8 rounded-3xl mb-16">
         <div>
-          <h3 className="text-2xl font-extrabold mb-2">Join the Study Circle</h3>
-          <p className="text-gray-400 text-sm">Get live job alerts, formula sheets, competitive mock links, and peer support on Telegram.</p>
+          <h3 className="text-2xl font-extrabold text-white mb-2">Join the Academic Circle</h3>
+          <p className="text-gray-400 text-sm">Get live job alerts, competitive mock keys, syllabus catalogs, and peer support on Telegram.</p>
         </div>
         <a
           href="https://t.me/your_channel"
@@ -382,7 +610,7 @@ export default function NewHomepage() {
           rel="noopener noreferrer"
           className="px-6 py-3.5 bg-blue-500/10 border border-blue-500/20 rounded-2xl text-blue-400 hover:bg-blue-500 hover:text-white font-bold flex items-center gap-2 transition-all duration-300 shadow-[0_0_20px_rgba(59,130,246,0.05)]"
         >
-          <Send className="w-5 h-5" />
+          <Sparkles className="w-5 h-5" />
           Join Telegram Channel
         </a>
       </section>
