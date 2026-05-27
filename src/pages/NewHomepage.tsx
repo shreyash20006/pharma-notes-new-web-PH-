@@ -23,7 +23,7 @@ import {
 import { useFirebase } from '../context/FirebaseContext';
 
 export default function NewHomepage() {
-  const { user, userProfile } = useFirebase();
+  const { user, userProfile, signInWithGoogle, signOut, isAdmin } = useFirebase();
   const navigate = useNavigate();
   
   const [searchQuery, setSearchQuery] = useState('');
@@ -133,7 +133,77 @@ export default function NewHomepage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0D1117] text-[#e1e2ec] relative overflow-hidden font-sans selection:bg-blue-600/30 pt-20">
+    <div className="min-h-screen bg-[#0D1117] text-[#e1e2ec] relative overflow-hidden font-sans selection:bg-blue-600/30 pt-24">
+      {/* Premium Header Navigation Bar */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0d1117]/80 backdrop-blur-xl border-b border-white/5 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          {/* Brand Logo */}
+          <Link to="/" className="flex items-center gap-2 group">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(139,92,246,0.25)] group-hover:shadow-[0_0_25px_rgba(139,92,246,0.45)] transition-all">
+              <BookOpen className="w-5.5 h-5.5 text-white" />
+            </div>
+            <span className="text-xl font-black bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+              NotesDrive
+            </span>
+          </Link>
+
+          {/* Quick Hub Navigation */}
+          <div className="hidden md:flex items-center gap-6 text-sm font-bold text-gray-400">
+            <Link to="/notes-library/btech" className="hover:text-blue-400 transition-colors">B.Tech</Link>
+            <Link to="/notes-library/bpharma" className="hover:text-pink-400 transition-colors">B.Pharma</Link>
+            <Link to="/notes-library/jeeneet" className="hover:text-purple-400 transition-colors">JEE / NEET</Link>
+            <Link to="/premium" className="hover:text-yellow-400 transition-colors flex items-center gap-1">
+              <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" /> Pro Access
+            </Link>
+          </div>
+
+          {/* Authentication Actions (Google Login / Profile Widget) */}
+          <div className="flex items-center gap-4">
+            {user ? (
+              <div className="flex items-center gap-2 sm:gap-3 bg-white/5 border border-white/10 rounded-2xl pl-3 pr-2 py-1.5">
+                <div className="hidden md:block text-right">
+                  <p className="text-xs font-bold text-white line-clamp-1">{userProfile?.displayName || user.email?.split('@')[0]}</p>
+                  <p className="text-[9px] text-gray-500 uppercase tracking-widest font-extrabold">{userProfile?.isPremium ? 'PRO MEMBER' : 'FREE ACCOUNT'}</p>
+                </div>
+                {userProfile?.photoURL ? (
+                  <img src={userProfile.photoURL} alt="Profile" className="w-8 h-8 rounded-full border border-purple-500" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-xs font-bold border border-purple-500 text-white">
+                    {user.email?.[0].toUpperCase()}
+                  </div>
+                )}
+                <div className="h-6 w-[1px] bg-white/10 hidden sm:block" />
+                {isAdmin && (
+                  <Link to="/admin" className="text-xs text-blue-400 hover:text-blue-300 transition-colors font-bold px-2 py-1">
+                    Admin
+                  </Link>
+                )}
+                <Link to="/student-dashboard" className="text-xs text-purple-400 hover:text-purple-300 transition-colors font-bold px-2 py-1">
+                  Dashboard
+                </Link>
+                <button onClick={signOut} className="text-xs text-gray-400 hover:text-red-400 transition-colors font-bold px-2 py-1">
+                  Log out
+                </button>
+              </div>
+            ) : (
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={signInWithGoogle}
+                className="bg-white hover:bg-gray-100 text-gray-900 text-xs sm:text-sm font-black px-4 sm:px-5 py-2.5 rounded-xl shadow-lg shadow-white/5 flex items-center gap-2 group transition-all"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                Sign in with Google
+              </motion.button>
+            )}
+          </div>
+        </div>
+      </nav>
       
       {/* Decorative radial lighting backdrops */}
       <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-blue-600/5 rounded-full blur-[140px] pointer-events-none -z-10" />
@@ -179,6 +249,34 @@ export default function NewHomepage() {
           >
             Access and list high-fidelity study materials curated by top-performing students and verified professionals. From engineering algorithms to clinical case sheets and eBooks.
           </motion.p>
+
+          {/* Large Hero Google Sign In Call to Action */}
+          {!user && (
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.15 }}
+              className="pt-2"
+            >
+              <motion.button
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={signInWithGoogle}
+                className="bg-white hover:bg-gray-100 text-gray-900 font-extrabold text-sm sm:text-base px-8 py-4 rounded-2xl shadow-xl flex items-center justify-center gap-3 border border-white/50 mx-auto transition-all"
+                style={{
+                  boxShadow: '0 10px 30px rgba(255,255,255,0.05), 0 0 0 1px rgba(255,255,255,0.5)'
+                }}
+              >
+                <svg className="h-5 w-5 sm:h-6 sm:w-6" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                Continue with Google Account
+              </motion.button>
+            </motion.div>
+          )}
 
           {/* Search Engine Input Bar */}
           <motion.form 
