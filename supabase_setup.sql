@@ -71,9 +71,13 @@ create table if not exists public.notes (
   view_count int default 0,
   tags text[], -- e.g., ['pharmacology', 'important', 'handwritten']
   uploaded_by uuid references public.profiles(id),
+  price numeric(10,2) default 0.00,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
+
+-- Safe alter in case table exists
+alter table public.notes add column if not exists price numeric(10,2) default 0.00;
 
 -- =============================================
 
@@ -132,6 +136,20 @@ create table if not exists public.coupons (
 
 -- =============================================
 
+-- 6.8. INDIVIDUAL EBOOK PURCHASES TABLE
+create table if not exists public.ebook_purchases (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references public.profiles(id) on delete cascade not null,
+  note_id uuid references public.notes(id) on delete cascade not null,
+  cashfree_order_id text unique,
+  amount numeric(10,2) not null,
+  status text default 'SUCCESS' check (status in ('PENDING', 'SUCCESS', 'FAILED')),
+  created_at timestamptz default now(),
+  unique(user_id, note_id)
+);
+
+-- =============================================
+
 -- 7. ROW LEVEL SECURITY (RLS) - IMPORTANT!
 alter table public.profiles enable row level security;
 alter table public.notes enable row level security;
@@ -140,6 +158,23 @@ alter table public.downloads enable row level security;
 alter table public.bookmarks enable row level security;
 alter table public.subjects enable row level security;
 alter table public.coupons enable row level security;
+alter table public.ebook_purchases enable row level security;
+
+-- Purchases policies
+drop policy if exists "Users see own purchases" on public.ebook_purchases;
+create policy "Users see own purchases"
+  on public.ebook_purchases for select using (auth.uid() = user_id);
+
+drop policy if exists "Admins see all purchases" on public.ebook_purchases;
+create policy "Admins see all purchases"
+  on public.ebook_purchases for all using (
+    (auth.jwt() ->> 'email') in (
+      'notesdriveshop@gmail.com',
+      'shreyash20006@gmail.com',
+      'argala28@icloud.com',
+      'sb108750@gmail.com'
+    )
+  );
 
 -- Profiles policies
 drop policy if exists "Users can view own profile" on public.profiles;
@@ -170,20 +205,22 @@ create policy "Users can update own profile"
 drop policy if exists "Free notes visible to all" on public.notes;
 create policy "Free notes visible to all"
   on public.notes for select
-  using (is_premium = false and is_active = true);
-
-drop policy if exists "Premium notes for premium users" on public.notes;
-create policy "Premium notes for premium users"
-  on public.notes for select
   using (
     is_active = true and (
-      is_premium = false or
+      (price = 0.00 and is_premium = false) or
+      uploaded_by = auth.uid() or
       exists (
         select 1 from public.profiles
         where id = auth.uid() and is_premium = true
+      ) or
+      exists (
+        select 1 from public.ebook_purchases p
+        where p.user_id = auth.uid() and p.note_id = id and p.status = 'SUCCESS'
       )
     )
   );
+
+drop policy if exists "Premium notes for premium users" on public.notes;
 
 drop policy if exists "Admins manage notes" on public.notes;
 create policy "Admins manage notes"
