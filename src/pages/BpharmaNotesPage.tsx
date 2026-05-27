@@ -366,6 +366,14 @@ export default function BpharmaNotesPage() {
                       </button>
                     </div>
 
+                    {/* Cover Thumbnail Preview */}
+                    {note.thumbnail_url && (
+                      <div className="w-full h-40 rounded-2xl border border-white/10 overflow-hidden mb-4 relative bg-[#161B22]">
+                        <img src={note.thumbnail_url} alt={note.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                      </div>
+                    )}
+
                     {/* Subject info */}
                     {note.subject_name && (
                       <div className="text-[11px] text-gray-500 font-bold uppercase tracking-wider mb-1 flex items-center gap-1">

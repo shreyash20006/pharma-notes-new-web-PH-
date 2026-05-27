@@ -33,7 +33,8 @@ export default function Upload() {
     semester: '1',
     branch: 'General',
     driveLink: '',
-    unit: '1'
+    unit: '1',
+    thumbnailUrl: ''
   });
   
   const [uploading, setUploading] = useState(false);
@@ -43,6 +44,7 @@ export default function Upload() {
   // File uploader state
   const [uploadingFile, setUploadingFile] = useState(false);
   const [uploadMethod, setUploadMethod] = useState<'upload' | 'link'>('upload');
+  const [uploadingCover, setUploadingCover] = useState(false);
 
   const selectedCategory = CATEGORIES.find(c => c.id === form.category);
 
@@ -85,6 +87,45 @@ export default function Upload() {
     }
   };
 
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file only (PNG/JPG/WEBP).');
+      return;
+    }
+
+    setUploadingCover(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2, 15)}-${Date.now()}.${fileExt}`;
+      const filePath = `covers/${fileName}`;
+
+      const { data, error: uploadError } = await supabase.storage
+        .from('notes-files')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('notes-files')
+        .getPublicUrl(filePath);
+
+      setForm(prev => ({ ...prev, thumbnailUrl: publicUrl }));
+      setError(null);
+    } catch (uploadErr: any) {
+      console.error('Error uploading cover:', uploadErr);
+      alert(`Upload failed: ${uploadErr.message || 'Please verify notes-files bucket is public.'}`);
+    } finally {
+      setUploadingCover(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
@@ -116,6 +157,7 @@ export default function Upload() {
           unit: Number(form.unit) || null,
           branch: form.branch,
           file_url: form.driveLink,
+          thumbnail_url: form.thumbnailUrl || null,
           is_premium: false, // User uploads are free by default
           status: 'pending', // Requires admin approval
           download_count: 0,
@@ -133,7 +175,8 @@ export default function Upload() {
         semester: '1',
         branch: 'General',
         driveLink: '',
-        unit: '1'
+        unit: '1',
+        thumbnailUrl: ''
       });
     } catch (err: any) {
       console.error('Upload submission error:', err);
@@ -439,6 +482,59 @@ export default function Upload() {
                     value={form.driveLink}
                     required
                   />
+                </div>
+
+                {/* Cover Photo Upload Block */}
+                <div>
+                  <label className="block text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">Cover Photo / Book Thumbnail (Optional)</label>
+                  <div className="flex flex-col sm:flex-row gap-4 items-center bg-white/5 border border-white/10 rounded-2xl p-4">
+                    {form.thumbnailUrl ? (
+                      <div className="w-20 h-28 rounded-lg bg-gray-800 border border-white/10 overflow-hidden relative flex-shrink-0 group">
+                        <img src={form.thumbnailUrl} alt="Cover Preview" className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => setForm(prev => ({ ...prev, thumbnailUrl: '' }))}
+                          className="absolute inset-0 bg-black/75 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-red-500 font-bold text-xs"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="w-20 h-28 rounded-lg bg-white/5 border border-dashed border-white/10 flex flex-col items-center justify-center flex-shrink-0 text-gray-500 text-xs text-center p-2">
+                        <UploadCloud className="w-5 h-5 mb-1" />
+                        No Cover
+                      </div>
+                    )}
+
+                    <div className="flex-1 w-full text-center sm:text-left">
+                      <div className="relative inline-block">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleCoverUpload}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          disabled={uploadingCover}
+                        />
+                        <button
+                          type="button"
+                          className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold transition-all inline-flex items-center gap-2"
+                        >
+                          {uploadingCover ? (
+                            <>
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              Uploading...
+                            </>
+                          ) : (
+                            <>
+                              <UploadCloud className="w-3.5 h-3.5" />
+                              Select Image
+                            </>
+                          )}
+                        </button>
+                      </div>
+                      <p className="text-gray-500 text-[10px] mt-2">PNG, JPG or WEBP formats. Recommended ratio 3:4</p>
+                    </div>
+                  </div>
                 </div>
 
                 {/* How it works info */}
