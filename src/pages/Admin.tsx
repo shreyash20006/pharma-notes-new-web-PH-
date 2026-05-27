@@ -20,7 +20,8 @@ import {
   CheckCircle2, 
   Star,
   Sparkles,
-  Info
+  Info,
+  UploadCloud
 } from 'lucide-react';
 import { Navigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
@@ -55,9 +56,10 @@ interface Coupon {
 }
 
 const CATEGORIES = [
-  { id: 'bpharma', name: 'B.Pharma', branches: ['General'] },
-  { id: 'jee', name: 'IIT-JEE Prep', branches: ['Physics', 'Chemistry', 'Mathematics'] },
-  { id: 'neet', name: 'NEET Prep', branches: ['Physics', 'Chemistry', 'Biology'] },
+  { id: 'bpharma', name: 'B.Pharma Notes & E-Books', branches: ['General'] },
+  { id: 'jee', name: 'IIT-JEE Prep Notes & E-Books', branches: ['Physics', 'Chemistry', 'Mathematics'] },
+  { id: 'neet', name: 'NEET Prep Notes & E-Books', branches: ['Physics', 'Chemistry', 'Biology'] },
+  { id: 'ebooks', name: 'Reference E-Books (All Streams)', branches: ['Pharmacy', 'Engineering', 'Medical', 'General'] }
 ];
 
 export default function Admin() {
@@ -99,6 +101,10 @@ export default function Admin() {
     isPremium: false,
     unit: '1'
   });
+
+  // File Uploader state
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [uploadMethod, setUploadMethod] = useState<'upload' | 'link'>('upload');
 
   const fetchNotes = async () => {
     try {
@@ -238,6 +244,45 @@ export default function Admin() {
       fetchCoupons();
     } catch (error) {
       console.error('Error toggling coupon:', error);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (file.type !== 'application/pdf') {
+      alert('Please upload a PDF file only.');
+      return;
+    }
+
+    setUploadingFile(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2, 15)}-${Date.now()}.${fileExt}`;
+      const filePath = `ebooks/${fileName}`;
+
+      const { data, error: uploadError } = await supabase.storage
+        .from('notes-files')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('notes-files')
+        .getPublicUrl(filePath);
+
+      setForm(prev => ({ ...prev, driveLink: publicUrl }));
+      showToast('PDF eBook uploaded successfully to Supabase Storage!');
+    } catch (uploadErr: any) {
+      console.error('Error uploading file:', uploadErr);
+      alert(`Upload failed: ${uploadErr.message || 'Please ensure you have created a public storage bucket named "notes-files" in your Supabase dashboard.'}`);
+    } finally {
+      setUploadingFile(false);
     }
   };
 
@@ -499,32 +544,32 @@ export default function Admin() {
               Publish Study Note
             </h2>
             
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="md:col-span-2">
-                <label className="block text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">Note Title *</label>
+                <label className="block text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">E-Book or Note Title *</label>
                 <input
                   type="text"
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
                   className="w-full bg-[#161B22] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500/50"
-                  placeholder="e.g., Pharmaceutical Analysis - Volumetric Notes"
+                  placeholder="e.g., GPAT Crackbook, Pharmaceutical Analysis - Volumetric Notes"
                   required
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">Description</label>
+                <label className="block text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">Description / Synopsis</label>
                 <textarea
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                   className="w-full bg-[#161B22] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500/50 resize-none"
                   rows={3}
-                  placeholder="Brief description of organic compounds, formula sheets, etc..."
+                  placeholder="Brief description, syllabus coverage, or book synopsis..."
                 />
               </div>
 
               <div>
-                <label className="block text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">Course Category *</label>
+                <label className="block text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">Product Category *</label>
                 <select
                   value={form.category}
                   onChange={(e) => setForm({ ...form, category: e.target.value, branch: CATEGORIES.find(c => c.id === e.target.value)?.branches[0] || 'General' })}
@@ -556,9 +601,9 @@ export default function Admin() {
                   onChange={(e) => setForm({ ...form, semester: e.target.value })}
                   className="w-full bg-[#161B22] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500/50"
                 >
-                  {form.category === 'bpharma' ? (
+                  {form.category === 'bpharma' || form.category === 'ebooks' ? (
                     [1, 2, 3, 4, 5, 6, 7, 8].map(s => (
-                      <option key={s} value={s.toString()}>Semester {s}</option>
+                      <option key={s} value={s.toString()}>Semester {s} / Level {s}</option>
                     ))
                   ) : (
                     <>
@@ -571,7 +616,7 @@ export default function Admin() {
               </div>
 
               <div>
-                <label className="block text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">Unit ID (1-5)</label>
+                <label className="block text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">Unit ID (Optional for E-Books)</label>
                 <select
                   value={form.unit}
                   onChange={(e) => setForm({ ...form, unit: e.target.value })}
@@ -584,18 +629,86 @@ export default function Admin() {
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">Google Drive PDF / Storage Link *</label>
+                <label className="block text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">eBook PDF File / Link *</label>
+                
+                {/* Upload method toggle */}
+                <div className="flex gap-2 mb-4 bg-white/5 p-1 rounded-xl w-fit">
+                  <button
+                    type="button"
+                    onClick={() => setUploadMethod('upload')}
+                    className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                      uploadMethod === 'upload'
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    Upload PDF Directly
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUploadMethod('link')}
+                    className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                      uploadMethod === 'link'
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    Provide Google Drive/External Link
+                  </button>
+                </div>
+
+                {uploadMethod === 'upload' ? (
+                  <div className="border-2 border-dashed border-white/10 rounded-2xl p-6 text-center bg-white/[0.01] hover:bg-white/[0.02] hover:border-blue-500/30 transition-all relative">
+                    <input
+                      type="file"
+                      accept=".pdf"
+                      onChange={handleFileUpload}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      disabled={uploadingFile}
+                    />
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <div className="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center border border-blue-500/20 text-blue-400">
+                        {uploadingFile ? (
+                          <Loader2 className="w-6 h-6 animate-spin" />
+                        ) : (
+                          <UploadCloud className="w-6 h-6" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-gray-300">
+                          {uploadingFile ? 'Uploading PDF eBook...' : 'Click or drag PDF file here to upload'}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">PDF format up to 50MB</p>
+                      </div>
+                      {form.driveLink && (
+                        <div className="mt-3 px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-xl text-blue-400 text-xs font-bold inline-flex items-center gap-2">
+                          <Check className="w-3.5 h-3.5" /> PDF Uploaded Successfully!
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <input
+                      type="url"
+                      value={form.driveLink}
+                      onChange={(e) => setForm({ ...form, driveLink: e.target.value })}
+                      className="w-full bg-[#161B22] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500/50"
+                      placeholder="https://drive.google.com/... or external PDF URL"
+                      required={uploadMethod === 'link'}
+                    />
+                    <p className="text-gray-500 text-xs mt-1.5 flex items-center gap-1">
+                      <Info className="w-3.5 h-3.5" /> Ensure the link sharing permissions are set to "Anyone with the link can view"
+                    </p>
+                  </div>
+                )}
+
+                {/* Hidden input to enforce html required validation */}
                 <input
-                  type="url"
+                  type="hidden"
                   value={form.driveLink}
-                  onChange={(e) => setForm({ ...form, driveLink: e.target.value })}
-                  className="w-full bg-[#161B22] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500/50"
-                  placeholder="https://drive.google.com/... or Supabase storage link"
                   required
                 />
-                <p className="text-gray-500 text-xs mt-1.5 flex items-center gap-1">
-                  <Info className="w-3.5 h-3.5" /> Ensure the link sharing permissions are set to "Anyone with the link can view"
-                </p>
               </div>
 
               <div className="md:col-span-2">
