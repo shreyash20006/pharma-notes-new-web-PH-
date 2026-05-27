@@ -118,6 +118,20 @@ create table if not exists public.bookmarks (
 
 -- =============================================
 
+-- 6.5. COUPONS TABLE
+create table if not exists public.coupons (
+  id uuid default gen_random_uuid() primary key,
+  code text unique not null,
+  discount numeric(10,2) not null,
+  type text not null check (type in ('percent', 'flat')),
+  max_uses int not null default 100,
+  used_count int not null default 0,
+  active boolean not null default true,
+  created_at timestamptz default now()
+);
+
+-- =============================================
+
 -- 7. ROW LEVEL SECURITY (RLS) - IMPORTANT!
 alter table public.profiles enable row level security;
 alter table public.notes enable row level security;
@@ -125,15 +139,32 @@ alter table public.payments enable row level security;
 alter table public.downloads enable row level security;
 alter table public.bookmarks enable row level security;
 alter table public.subjects enable row level security;
+alter table public.coupons enable row level security;
 
 -- Profiles policies
 drop policy if exists "Users can view own profile" on public.profiles;
 create policy "Users can view own profile"
-  on public.profiles for select using (auth.uid() = id);
+  on public.profiles for select using (
+    auth.uid() = id or 
+    (auth.jwt() ->> 'email') in (
+      'notesdriveshop@gmail.com',
+      'shreyash20006@gmail.com',
+      'argala28@icloud.com',
+      'sb108750@gmail.com'
+    )
+  );
 
 drop policy if exists "Users can update own profile" on public.profiles;
 create policy "Users can update own profile"
-  on public.profiles for update using (auth.uid() = id);
+  on public.profiles for update using (
+    auth.uid() = id or 
+    (auth.jwt() ->> 'email') in (
+      'notesdriveshop@gmail.com',
+      'shreyash20006@gmail.com',
+      'argala28@icloud.com',
+      'sb108750@gmail.com'
+    )
+  );
 
 -- Notes policies
 drop policy if exists "Free notes visible to all" on public.notes;
@@ -154,6 +185,17 @@ create policy "Premium notes for premium users"
     )
   );
 
+drop policy if exists "Admins manage notes" on public.notes;
+create policy "Admins manage notes"
+  on public.notes for all using (
+    (auth.jwt() ->> 'email') in (
+      'notesdriveshop@gmail.com',
+      'shreyash20006@gmail.com',
+      'argala28@icloud.com',
+      'sb108750@gmail.com'
+    )
+  );
+
 -- Payments policies
 drop policy if exists "Users see own payments" on public.payments;
 create policy "Users see own payments"
@@ -167,6 +209,33 @@ create policy "Users insert own payments"
 drop policy if exists "Subjects visible to all" on public.subjects;
 create policy "Subjects visible to all"
   on public.subjects for select using (is_active = true);
+
+drop policy if exists "Admins manage subjects" on public.subjects;
+create policy "Admins manage subjects"
+  on public.subjects for all using (
+    (auth.jwt() ->> 'email') in (
+      'notesdriveshop@gmail.com',
+      'shreyash20006@gmail.com',
+      'argala28@icloud.com',
+      'sb108750@gmail.com'
+    )
+  );
+
+-- Coupons policies
+drop policy if exists "Coupons visible to all" on public.coupons;
+create policy "Coupons visible to all"
+  on public.coupons for select using (true);
+
+drop policy if exists "Admins manage coupons" on public.coupons;
+create policy "Admins manage coupons"
+  on public.coupons for all using (
+    (auth.jwt() ->> 'email') in (
+      'notesdriveshop@gmail.com',
+      'shreyash20006@gmail.com',
+      'argala28@icloud.com',
+      'sb108750@gmail.com'
+    )
+  );
 
 -- Downloads & Bookmarks policies
 drop policy if exists "Users manage own downloads" on public.downloads;
