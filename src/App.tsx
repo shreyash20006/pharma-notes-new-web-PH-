@@ -72,7 +72,7 @@ export default function App() {
             <Route path="/notes" element={<><Navbar /><Notes /></>} />
             <Route path="/notes-library" element={<><Navbar /><NotesLibrary /></>} />
             <Route path="/notes-library/btech" element={<><Navbar /><BranchSelection /></>} />
-            <Route path="/notes-library/btech/:branch" element={<><Navbar /><SubjectSelection /></>} />
+            <Route path="/notes-library/:stream/:branch" element={<><Navbar /><SubjectSelection /></>} />
             <Route path="/notes-library/bpharma" element={<><Navbar /><BpharmaNotesPage /></>} />
             <Route path="/notes-library/jeeneet" element={<><Navbar /><JeeNeetNotesPage /></>} />
             <Route path="/notes-library/:stream/:branch/:semester/:subject" element={<><Navbar /><SubjectPDFs /></>} />
