@@ -29,7 +29,6 @@
     "src/pages/CompleteHomepage_Part2.tsx",
     "src/pages/CompleteHomepageFinal.tsx",
     "src/pages/UserSettings.tsx",
-    "src/pages/Admin.tsx",
     "src/components/RealSubjectsPreview.tsx"
   ]
 }

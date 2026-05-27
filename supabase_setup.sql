@@ -190,7 +190,15 @@ insert into public.subjects (name, code, semester) values
   ('Biochemistry', 'BP203T', 2),
   ('Pharmacology I', 'BP401T', 4),
   ('Medicinal Chemistry I', 'BP402T', 4),
-  ('Pharmacognosy I', 'BP403T', 4)
+  ('Pharmacognosy I', 'BP403T', 4),
+  ('JEE Physics - Class 11', 'PHY11', 1),
+  ('JEE Chemistry - Class 11', 'CHEM11', 1),
+  ('JEE Mathematics - Class 11', 'MATH11', 1),
+  ('NEET Biology - Class 11', 'BIO11', 1),
+  ('JEE Physics - Class 12', 'PHY12', 2),
+  ('JEE Chemistry - Class 12', 'CHEM12', 2),
+  ('JEE Mathematics - Class 12', 'MATH12', 2),
+  ('NEET Biology - Class 12', 'BIO12', 2)
 on conflict (code) do update 
 set name = excluded.name, semester = excluded.semester;
 

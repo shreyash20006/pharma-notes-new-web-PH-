@@ -13,8 +13,8 @@ import {
   Star,
   CheckCircle2,
   FileText,
-  ShieldAlert,
-  Send
+  Send,
+  Award
 } from 'lucide-react';
 import { useFirebase } from '../context/FirebaseContext';
 
@@ -42,7 +42,7 @@ export default function NewHomepage() {
           <div className="px-5 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl flex items-center gap-2 shadow-[0_0_20px_rgba(59,130,246,0.15)]">
             <Sparkles className="w-4 h-4 text-blue-400 animate-pulse" />
             <span className="text-xs font-bold text-gray-300 uppercase tracking-widest">
-              Premium B.Pharma Notes Hub
+              Premium B.Pharma & JEE/NEET Hub
             </span>
           </div>
         </motion.div>
@@ -56,7 +56,7 @@ export default function NewHomepage() {
             className="text-5xl md:text-7xl font-black tracking-tight leading-none mb-6"
             style={{ fontFamily: "'Space Grotesk', sans-serif" }}
           >
-            Your B.Pharma Notes, <br />
+            Your Study Notes, <br />
             <span className="bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent filter drop-shadow-[0_0_30px_rgba(139,92,246,0.3)]">
               All in One Place
             </span>
@@ -68,7 +68,7 @@ export default function NewHomepage() {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed"
           >
-            Master pharmacy subjects with high-quality, semester-wise handwritten notes. Complete your syllabus, prepare for GPAT, and ace your exams effortlessly.
+            Master B.Pharma curriculum and ace IIT-JEE & NEET competitive exams with premium, high-quality handwritten study modules.
           </motion.p>
         </div>
 
@@ -83,10 +83,21 @@ export default function NewHomepage() {
             <motion.button
               whileHover={{ scale: 1.05, y: -3 }}
               whileTap={{ scale: 0.98 }}
-              className="px-8 py-4 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 hover:from-blue-500 hover:to-purple-500 text-white rounded-2xl font-bold text-base flex items-center gap-2 shadow-[0_0_30px_rgba(59,130,246,0.3)] transition-all"
+              className="px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-500 hover:to-blue-700 text-white rounded-2xl font-bold text-base flex items-center gap-2 shadow-[0_0_30px_rgba(59,130,246,0.3)] transition-all"
             >
               Browse B.Pharma Notes
               <ArrowRight className="w-5 h-5" />
+            </motion.button>
+          </Link>
+
+          <Link to="/notes-library/jeeneet">
+            <motion.button
+              whileHover={{ scale: 1.05, y: -3 }}
+              whileTap={{ scale: 0.98 }}
+              className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white rounded-2xl font-bold text-base flex items-center gap-2 shadow-[0_0_30px_rgba(139,92,246,0.3)] transition-all"
+            >
+              Browse JEE / NEET Prep
+              <Award className="w-5 h-5" />
             </motion.button>
           </Link>
 
@@ -131,10 +142,10 @@ export default function NewHomepage() {
       <section className="py-16 bg-white/[0.02] border-y border-white/5 relative">
         <div className="max-w-6xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8">
           {[
-            { icon: FileText, value: '500+ Notes', label: 'Precise Handouts & PPTs' },
-            { icon: BookOpen, value: '8 Semesters', label: 'Entire B.Pharma Covered' },
-            { icon: Users, value: '1,000+ Students', label: 'Active Learners Daily' },
-            { icon: Star, value: '₹499 Lifetime', label: 'One-time upgrade cost' },
+            { icon: FileText, value: '800+ Notes', label: 'Precise Handouts & Formula Sheets' },
+            { icon: BookOpen, value: 'Dual Hub', label: 'B.Pharma + JEE/NEET Prep' },
+            { icon: Users, value: '5,000+ Students', label: 'Active Learners Daily' },
+            { icon: Star, value: '₹499 Lifetime', label: 'Unlock Everything Forever' },
           ].map((stat, i) => (
             <motion.div
               key={i}
@@ -163,7 +174,7 @@ export default function NewHomepage() {
             Engineered for <span className="text-blue-400">Excellent Grades</span>
           </h2>
           <p className="text-gray-400">
-            Everything a B.Pharma student needs to succeed, right inside a single dashboard.
+            Powerful features designed to make your study life easier, whether in college or preparing for competitive entrance.
           </p>
         </div>
 
@@ -171,18 +182,18 @@ export default function NewHomepage() {
           {[
             {
               icon: BookOpen,
-              title: 'Curated PDF Notes',
-              description: 'Semester-wise notes structured unit-by-unit according to PCI syllabus.'
+              title: 'Curated PDFs & Blueprints',
+              description: 'Semester-wise notes structured unit-by-unit according to PCI syllabus, and competitive notes for IIT-JEE/NEET.'
             },
             {
               icon: Brain,
               title: 'AI Study Assistant',
-              description: 'Summarize heavy pharmacology and chemistry chapters in seconds using AI.'
+              description: 'Summarize heavy organic chemistry, biology, or mechanics chapters in seconds using advanced AI.'
             },
             {
               icon: Zap,
               title: 'Instant Checkout SDK',
-              description: 'Secure billing through Cashfree Payment Gateway with instant upgrades.'
+              description: 'Secure billing through Cashfree Payment Gateway with instant lifetime upgrades.'
             }
           ].map((feat, i) => (
             <motion.div
@@ -211,7 +222,7 @@ export default function NewHomepage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-black mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              Explore By <span className="text-purple-400">Semester</span>
+              Explore B.Pharma By <span className="text-purple-400">Semester</span>
             </h2>
             <p className="text-gray-400 max-w-xl mx-auto">
               Select your semester to access tailored hand-outs, university blueprints, syllabus catalogs, and notes.
@@ -240,6 +251,60 @@ export default function NewHomepage() {
         </div>
       </section>
 
+      {/* JEE / NEET Exam Portal Grid Section */}
+      <section className="py-20 bg-gradient-to-b from-[#161B22]/40 to-transparent border-t border-white/5 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-black mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+              Explore <span className="text-blue-400">JEE & NEET Prep</span>
+            </h2>
+            <p className="text-gray-400 max-w-xl mx-auto">
+              Select your competitive goal and subject to access top-tier study notes, handwritten cards, and formulas.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {/* JEE card */}
+            <Link to="/notes-library/jeeneet?goal=JEE">
+              <motion.div
+                whileHover={{ scale: 1.03, y: -4, borderColor: 'rgba(59,130,246,0.4)' }}
+                className="p-8 rounded-3xl bg-gradient-to-br from-blue-950/20 to-slate-950 border border-white/10 backdrop-blur-md flex flex-col justify-between h-64 shadow-xl cursor-pointer group"
+              >
+                <div>
+                  <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center font-black text-lg text-blue-400 border border-blue-500/20 mb-4 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                    JEE
+                  </div>
+                  <h3 className="text-2xl font-black mb-2 group-hover:text-blue-400 transition-colors">IIT-JEE Mains & Advanced</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed">Crack Engineering with Class 11 & 12 Physics, Chemistry, and Mathematics formula sheets & revision notes.</p>
+                </div>
+                <div className="flex items-center text-blue-400 font-bold text-sm mt-4">
+                  Browse JEE Notes <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-2 transition-transform" />
+                </div>
+              </motion.div>
+            </Link>
+
+            {/* NEET card */}
+            <Link to="/notes-library/jeeneet?goal=NEET">
+              <motion.div
+                whileHover={{ scale: 1.03, y: -4, borderColor: 'rgba(236,72,153,0.4)' }}
+                className="p-8 rounded-3xl bg-gradient-to-br from-pink-950/20 to-slate-950 border border-white/10 backdrop-blur-md flex flex-col justify-between h-64 shadow-xl cursor-pointer group"
+              >
+                <div>
+                  <div className="w-12 h-12 rounded-xl bg-pink-500/10 flex items-center justify-center font-black text-lg text-pink-400 border border-pink-500/20 mb-4 group-hover:bg-pink-600 group-hover:text-white transition-all">
+                    NEET
+                  </div>
+                  <h3 className="text-2xl font-black mb-2 group-hover:text-pink-400 transition-colors">NEET UG Medical Prep</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed">Ace Medical entrance with Class 11 & 12 Physics, Chemistry, and deep-dive Biology handwritten modules.</p>
+                </div>
+                <div className="flex items-center text-pink-400 font-bold text-sm mt-4">
+                  Browse NEET Notes <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-2 transition-transform" />
+                </div>
+              </motion.div>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Premium Lifetime Upgrade CTA Section */}
       <section className="py-24 px-6 max-w-5xl mx-auto text-center relative z-10">
         <motion.div
@@ -251,16 +316,16 @@ export default function NewHomepage() {
         >
           {/* Top highlight badge */}
           <div className="absolute top-0 right-1/2 translate-x-1/2 bg-blue-600 text-white px-8 py-2.5 rounded-b-3xl font-bold uppercase text-[10px] tracking-widest shadow-md">
-            RECOMMENDED FOR GPAT & PCI EXAMS
+            RECOMMENDED FOR GPAT, JEE & NEET EXAMS
           </div>
 
           <div className="max-w-2xl mx-auto flex flex-col items-center pt-4">
             <Star className="w-16 h-16 text-yellow-400 fill-yellow-400 mb-6 animate-pulse" />
             <h2 className="text-4xl md:text-5xl font-black text-white mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              Unlock All B.Pharma Notes
+              Unlock All Study Resources
             </h2>
             <p className="text-gray-400 text-base md:text-lg mb-8 leading-relaxed">
-              Get lifetime access to the entire B.Pharma library containing all subjects, exclusive mock GPAT study materials, and premium university templates for a one-time upgrade fee.
+              Get lifetime access to the entire study library containing all B.Pharma semesters, and JEE/NEET revision cards, formula handouts, and premium study materials for a single one-time upgrade fee.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center gap-6 mb-10">
@@ -272,9 +337,9 @@ export default function NewHomepage() {
               <ul className="text-left space-y-2">
                 {[
                   '100% Secure Checkout via Cashfree',
-                  'Unlimited High-Quality Downloads',
-                  'No Monthly Subscriptions',
-                  'Exclusive Handwritten Content'
+                  'Unlimited High-Quality Note Downloads',
+                  'Access both Pharmacy & Engineering/Medical Hubs',
+                  'Exclusive Verified Handouts'
                 ].map((item, i) => (
                   <li key={i} className="flex items-center gap-2 text-sm text-gray-300 font-medium">
                     <CheckCircle2 className="w-4 h-4 text-blue-400" />
@@ -284,7 +349,7 @@ export default function NewHomepage() {
               </ul>
             </div>
 
-            {userProfile?.isPremium ? (
+            {userProfile?.is_premium ? (
               <div className="px-8 py-4 bg-blue-500/10 border border-blue-500/30 text-blue-400 rounded-2xl font-bold flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-blue-400" />
                 Active Premium Access (Lifetime Pro)
@@ -308,8 +373,8 @@ export default function NewHomepage() {
       {/* Community / Footer Telegram Promo */}
       <section className="py-16 px-6 border-t border-white/5 bg-[#161B22]/10 max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8 rounded-3xl mb-16">
         <div>
-          <h3 className="text-2xl font-extrabold mb-2">Join the B.Pharma Circle</h3>
-          <p className="text-gray-400 text-sm">Get live job alerts, syllabus catalogs, exam updates, and peer support on Telegram.</p>
+          <h3 className="text-2xl font-extrabold mb-2">Join the Study Circle</h3>
+          <p className="text-gray-400 text-sm">Get live job alerts, formula sheets, competitive mock links, and peer support on Telegram.</p>
         </div>
         <a
           href="https://t.me/your_channel"
