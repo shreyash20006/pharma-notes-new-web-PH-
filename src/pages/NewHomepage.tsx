@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion, useScroll, useTransform, useInView } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { 
   BookOpen, 
@@ -11,407 +11,317 @@ import {
   Users,
   GraduationCap,
   Star,
-  ChevronDown
+  CheckCircle2,
+  FileText,
+  ShieldAlert,
+  Send
 } from 'lucide-react';
-import { LogoMinimal } from '../components/NotesDriveLogo';
-import StackedNotesSection from '../components/StackedNotesSection';
+import { useFirebase } from '../context/FirebaseContext';
 
 export default function NewHomepage() {
-  const { scrollYProgress } = useScroll();
-  const heroRef = useRef(null);
-  const isHeroInView = useInView(heroRef, { once: false });
-
-  // Parallax effects
-  const y = useTransform(scrollYProgress, [0, 1], ['0%', '100%']);
-  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
+  const { user, userProfile } = useFirebase();
 
   return (
-    <div className="min-h-screen bg-[#0D1117] text-white">
-      {/* Animated Background */}
-      <div className="fixed inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0D1117] via-[#161B22] to-[#0D1117]"></div>
-        {/* Floating orbs */}
-        <motion.div
-          animate={{
-            scale: [1, 1.2, 1],
-            rotate: [0, 180, 360],
-          }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="absolute top-20 left-10 w-72 h-72 bg-[#3B31B8]/20 rounded-full blur-3xl"
-        ></motion.div>
-        <motion.div
-          animate={{
-            scale: [1.2, 1, 1.2],
-            rotate: [360, 180, 0],
-          }}
-          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-          className="absolute bottom-20 right-10 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl"
-        ></motion.div>
-      </div>
-
-      {/* Navbar */}
-      <Navbar />
+    <div className="min-h-screen bg-[#0D1117] text-white relative overflow-hidden font-sans selection:bg-blue-600/30">
+      
+      {/* Decorative Neon Blurs */}
+      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[140px] pointer-events-none -z-10" />
+      <div className="absolute top-1/3 right-1/4 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[160px] pointer-events-none -z-10" />
+      <div className="absolute bottom-10 left-10 w-[400px] h-[400px] bg-pink-500/5 rounded-full blur-[120px] pointer-events-none -z-10" />
 
       {/* Hero Section */}
-      <section ref={heroRef} className="relative min-h-screen flex items-center justify-center px-4 pt-20">
+      <section className="relative pt-32 pb-20 px-4 max-w-7xl mx-auto flex flex-col items-center">
+        
+        {/* Floating Interactive Badge */}
         <motion.div
-          style={{ opacity }}
-          className="max-w-6xl mx-auto text-center z-10"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="mb-8"
         >
-          {/* 3D Floating Badge */}
-          <motion.div
-            initial={{ opacity: 0, y: -50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="inline-block mb-8"
-          >
-            <motion.div
-              animate={{ 
-                rotateY: [0, 360],
-                rotateX: [0, 10, 0]
-              }}
-              transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-              className="px-6 py-2 bg-gradient-to-r from-[#3B31B8]/20 to-purple-600/20 border border-[#3B31B8]/30 rounded-full backdrop-blur-xl"
-            >
-              <span className="text-sm font-bold flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-[#3B31B8]" />
-                Your Ultimate Study Companion
-              </span>
-            </motion.div>
-          </motion.div>
+          <div className="px-5 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl flex items-center gap-2 shadow-[0_0_20px_rgba(59,130,246,0.15)]">
+            <Sparkles className="w-4 h-4 text-blue-400 animate-pulse" />
+            <span className="text-xs font-bold text-gray-300 uppercase tracking-widest">
+              Premium B.Pharma Notes Hub
+            </span>
+          </div>
+        </motion.div>
 
-          {/* Main Heading with 3D Effect */}
+        {/* Main Hero Header */}
+        <div className="text-center max-w-4xl mx-auto mb-10">
           <motion.h1
-            initial={{ opacity: 0, y: 50 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="text-6xl md:text-8xl font-black mb-6 leading-tight"
+            transition={{ duration: 0.8, delay: 0.1 }}
+            className="text-5xl md:text-7xl font-black tracking-tight leading-none mb-6"
+            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
           >
-            <motion.span
-              animate={{
-                textShadow: [
-                  '0 0 20px rgba(59,49,184,0.5)',
-                  '0 0 40px rgba(59,49,184,0.8)',
-                  '0 0 20px rgba(59,49,184,0.5)',
-                ],
-              }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className="bg-gradient-to-r from-[#3B31B8] via-purple-500 to-pink-500 bg-clip-text text-transparent"
-            >
-              NotesDrive
-            </motion.span>
-            <br />
-            <span className="text-white">Learn Smarter</span>
+            Your B.Pharma Notes, <br />
+            <span className="bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent filter drop-shadow-[0_0_30px_rgba(139,92,246,0.3)]">
+              All in One Place
+            </span>
           </motion.h1>
 
           <motion.p
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-            className="text-xl md:text-2xl text-gray-400 mb-12 max-w-3xl mx-auto"
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed"
           >
-            Access premium study notes, AI-powered summaries, and ace your exams with confidence 🚀
+            Master pharmacy subjects with high-quality, semester-wise handwritten notes. Complete your syllabus, prepare for GPAT, and ace your exams effortlessly.
           </motion.p>
+        </div>
 
-          {/* CTA Buttons */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.6 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center items-center"
-          >
-            <Link to="/notes-library">
-              <motion.button
-                whileHover={{ scale: 1.05, y: -5 }}
-                whileTap={{ scale: 0.95 }}
-                className="group relative px-8 py-4 bg-gradient-to-r from-[#3B31B8] to-purple-600 rounded-2xl font-bold text-lg overflow-hidden"
-              >
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                  initial={false}
-                />
-                <span className="relative flex items-center gap-2">
-                  Browse Notes
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
-                </span>
-              </motion.button>
-            </Link>
-
-            <Link to="/upload">
-              <motion.button
-                whileHover={{ scale: 1.05, y: -5 }}
-                whileTap={{ scale: 0.95 }}
-                className="px-8 py-4 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl font-bold text-lg hover:bg-white/20 transition-all"
-              >
-                Upload Notes
-              </motion.button>
-            </Link>
-          </motion.div>
-
-          {/* Scroll Indicator */}
-          <motion.div
-            animate={{ y: [0, 10, 0] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className="mt-20"
-          >
-            <ChevronDown className="w-8 h-8 mx-auto text-gray-600" />
-          </motion.div>
-        </motion.div>
-
-        {/* 3D Floating Cards */}
-        <FloatingCards />
-      </section>
-
-      {/* Stacked Notes Animation Section */}
-      <StackedNotesSection />
-
-      {/* Features Section */}
-      <FeaturesSection />
-
-      {/* Stats Section */}
-      <StatsSection />
-
-      {/* CTA Section */}
-      <CTASection />
-    </div>
-  );
-}
-
-// Navbar Component
-function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 50);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  return (
-    <motion.nav
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled ? 'bg-[#0D1117]/80 backdrop-blur-2xl border-b border-white/10' : 'bg-transparent'
-      }`}
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
-          <Link to="/">
-            <LogoMinimal size="md" animated={true} />
+        {/* Call to Actions */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.3 }}
+          className="flex flex-col sm:flex-row gap-4 mb-16 z-10"
+        >
+          <Link to="/notes-library/bpharma">
+            <motion.button
+              whileHover={{ scale: 1.05, y: -3 }}
+              whileTap={{ scale: 0.98 }}
+              className="px-8 py-4 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 hover:from-blue-500 hover:to-purple-500 text-white rounded-2xl font-bold text-base flex items-center gap-2 shadow-[0_0_30px_rgba(59,130,246,0.3)] transition-all"
+            >
+              Browse B.Pharma Notes
+              <ArrowRight className="w-5 h-5" />
+            </motion.button>
           </Link>
 
-          <div className="hidden md:flex items-center gap-8">
-            <Link to="/notes-library" className="text-sm font-medium hover:text-[#3B31B8] transition-colors">
-              Notes Library
-            </Link>
-            <Link to="/summarizer" className="text-sm font-medium hover:text-[#3B31B8] transition-colors">
-              AI Tools
-            </Link>
-            <Link to="/upload" className="text-sm font-medium hover:text-[#3B31B8] transition-colors">
-              Upload
-            </Link>
-            <Link to="/auth">
+          {!userProfile?.isPremium && (
+            <Link to="/premium">
               <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="px-6 py-2 bg-[#3B31B8] rounded-xl font-semibold"
+                whileHover={{ scale: 1.05, y: -3 }}
+                whileTap={{ scale: 0.98 }}
+                className="px-8 py-4 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 text-white rounded-2xl font-bold text-base flex items-center gap-2 backdrop-blur-xl transition-all"
               >
-                Get Started
+                Get Lifetime Pro (₹499)
+                <Star className="w-4 h-4 text-yellow-400 fill-yellow-400 animate-pulse" />
               </motion.button>
             </Link>
-          </div>
+          )}
+        </motion.div>
+
+        {/* Floating Semester Numbers Preview */}
+        <div className="w-full max-w-5xl grid grid-cols-4 md:grid-cols-8 gap-4 mb-24 px-4">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((sem, idx) => (
+            <Link key={sem} to={`/notes-library/bpharma?sem=${sem}`}>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, delay: idx * 0.05 }}
+                whileHover={{ scale: 1.1, y: -5, borderColor: 'rgba(59,130,246,0.5)' }}
+                className="aspect-square rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md flex flex-col items-center justify-center cursor-pointer transition-all hover:bg-gradient-to-br hover:from-blue-600/10 hover:to-purple-600/10 group"
+              >
+                <span className="text-2xl md:text-3xl font-black text-blue-400 group-hover:text-white transition-colors">
+                  S{sem}
+                </span>
+                <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider group-hover:text-blue-300 transition-colors mt-0.5">
+                  Sem
+                </span>
+              </motion.div>
+            </Link>
+          ))}
         </div>
-      </div>
-    </motion.nav>
-  );
-}
+      </section>
 
-// Floating 3D Cards
-function FloatingCards() {
-  const cards = [
-    { icon: BookOpen, label: 'Notes', position: 'top-20 left-10', delay: 0 },
-    { icon: Brain, label: 'AI Tools', position: 'top-40 right-20', delay: 0.2 },
-    { icon: Zap, label: 'Quick Access', position: 'bottom-40 left-20', delay: 0.4 },
-    { icon: Star, label: 'Premium', position: 'bottom-20 right-10', delay: 0.6 },
-  ];
-
-  return (
-    <div className="absolute inset-0 pointer-events-none">
-      {cards.map((card, i) => (
-        <motion.div
-          key={i}
-          initial={{ opacity: 0, scale: 0 }}
-          animate={{ 
-            opacity: [0.3, 0.6, 0.3],
-            scale: 1,
-            rotateY: [0, 360],
-            y: [0, -20, 0]
-          }}
-          transition={{
-            opacity: { duration: 3, repeat: Infinity, delay: card.delay },
-            scale: { duration: 0.5, delay: card.delay },
-            rotateY: { duration: 10, repeat: Infinity, ease: "linear", delay: card.delay },
-            y: { duration: 4, repeat: Infinity, delay: card.delay }
-          }}
-          className={`absolute ${card.position} hidden lg:block`}
-        >
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4">
-            <card.icon className="w-8 h-8 text-[#3B31B8]" />
-          </div>
-        </motion.div>
-      ))}
-    </div>
-  );
-}
-
-// Features Section with Scroll Animation
-function FeaturesSection() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
-
-  const features = [
-    {
-      icon: BookOpen,
-      title: 'Vast Library',
-      description: 'Access thousands of notes from BTech & B.Pharma streams',
-      color: 'from-blue-500 to-cyan-500'
-    },
-    {
-      icon: Brain,
-      title: 'AI Summarizer',
-      description: 'Get instant summaries of lengthy PDFs with AI',
-      color: 'from-purple-500 to-pink-500'
-    },
-    {
-      icon: Zap,
-      title: 'Quick Access',
-      description: 'Navigate by branch, semester, and subject easily',
-      color: 'from-orange-500 to-red-500'
-    },
-    {
-      icon: Users,
-      title: 'Community',
-      description: 'Upload and share notes with fellow students',
-      color: 'from-green-500 to-emerald-500'
-    },
-  ];
-
-  return (
-    <section ref={ref} className="relative py-32 px-4">
-      <div className="max-w-7xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8 }}
-          className="text-center mb-20"
-        >
-          <h2 className="text-5xl md:text-6xl font-black mb-6">
-            Everything You Need
-            <br />
-            <span className="bg-gradient-to-r from-[#3B31B8] to-purple-500 bg-clip-text text-transparent">
-              To Excel
-            </span>
-          </h2>
-          <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-            Powerful features designed to make your study life easier
-          </p>
-        </motion.div>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {features.map((feature, i) => (
+      {/* Stats Section */}
+      <section className="py-16 bg-white/[0.02] border-y border-white/5 relative">
+        <div className="max-w-6xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8">
+          {[
+            { icon: FileText, value: '500+ Notes', label: 'Precise Handouts & PPTs' },
+            { icon: BookOpen, value: '8 Semesters', label: 'Entire B.Pharma Covered' },
+            { icon: Users, value: '1,000+ Students', label: 'Active Learners Daily' },
+            { icon: Star, value: '₹499 Lifetime', label: 'One-time upgrade cost' },
+          ].map((stat, i) => (
             <motion.div
               key={i}
-              initial={{ opacity: 0, y: 50 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.5, delay: i * 0.1 }}
-              whileHover={{ y: -10, scale: 1.02 }}
-              className="relative group"
+              whileInView={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, y: 20 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: i * 0.1 }}
+              className="text-center group"
             >
-              <div className="absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 blur-xl transition-opacity from-[#3B31B8]/50 to-purple-500/50 rounded-3xl"></div>
-              
-              <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 h-full">
-                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6`}>
-                  <feature.icon className="w-8 h-8 text-white" />
-                </div>
-                
-                <h3 className="text-2xl font-bold mb-3">{feature.title}</h3>
-                <p className="text-gray-400">{feature.description}</p>
+              <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center mx-auto mb-3 border border-blue-500/20 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
+                <stat.icon className="w-6 h-6 text-blue-400 group-hover:text-white transition-colors" />
               </div>
+              <div className="text-3xl font-extrabold mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                {stat.value}
+              </div>
+              <div className="text-xs text-gray-400 font-semibold">{stat.label}</div>
             </motion.div>
           ))}
         </div>
-      </div>
-    </section>
-  );
-}
+      </section>
 
-// Stats Section
-function StatsSection() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true });
+      {/* Features Grid */}
+      <section className="py-24 px-6 max-w-7xl mx-auto">
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <h2 className="text-4xl md:text-5xl font-black mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+            Engineered for <span className="text-blue-400">Excellent Grades</span>
+          </h2>
+          <p className="text-gray-400">
+            Everything a B.Pharma student needs to succeed, right inside a single dashboard.
+          </p>
+        </div>
 
-  const stats = [
-    { icon: Download, value: 'Unlimited', label: 'Free Downloads' },
-    { icon: BookOpen, value: 'All', label: 'Subjects Covered' },
-    { icon: Users, value: 'Growing', label: 'Student Community' },
-    { icon: GraduationCap, value: '100%', label: 'Free Access' },
-  ];
+        <div className="grid md:grid-cols-3 gap-8">
+          {[
+            {
+              icon: BookOpen,
+              title: 'Curated PDF Notes',
+              description: 'Semester-wise notes structured unit-by-unit according to PCI syllabus.'
+            },
+            {
+              icon: Brain,
+              title: 'AI Study Assistant',
+              description: 'Summarize heavy pharmacology and chemistry chapters in seconds using AI.'
+            },
+            {
+              icon: Zap,
+              title: 'Instant Checkout SDK',
+              description: 'Secure billing through Cashfree Payment Gateway with instant upgrades.'
+            }
+          ].map((feat, i) => (
+            <motion.div
+              key={i}
+              whileInView={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, y: 30 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: i * 0.15 }}
+              whileHover={{ y: -8 }}
+              className="p-8 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-xl relative group overflow-hidden transition-all duration-300"
+            >
+              <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-blue-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+              
+              <div className="w-14 h-14 bg-blue-500/10 rounded-2xl flex items-center justify-center mb-6 border border-blue-500/20">
+                <feat.icon className="w-7 h-7 text-blue-400" />
+              </div>
+              <h3 className="text-2xl font-bold mb-3">{feat.title}</h3>
+              <p className="text-gray-400 text-sm leading-relaxed">{feat.description}</p>
+            </motion.div>
+          ))}
+        </div>
+      </section>
 
-  return (
-    <section ref={ref} className="relative py-32 px-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="bg-gradient-to-br from-[#3B31B8]/20 to-purple-600/20 border border-[#3B31B8]/30 rounded-3xl p-12 backdrop-blur-xl">
-          <div className="grid md:grid-cols-4 gap-8">
-            {stats.map((stat, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={isInView ? { opacity: 1, scale: 1 } : {}}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-                className="text-center"
-              >
-                <stat.icon className="w-12 h-12 text-[#3B31B8] mx-auto mb-4" />
-                <div className="text-4xl font-black mb-2">{stat.value}</div>
-                <div className="text-gray-400">{stat.label}</div>
-              </motion.div>
+      {/* Semester Selector Grid Section */}
+      <section className="py-20 bg-gradient-to-b from-transparent to-[#161B22]/40 border-t border-white/5 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-black mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+              Explore By <span className="text-purple-400">Semester</span>
+            </h2>
+            <p className="text-gray-400 max-w-xl mx-auto">
+              Select your semester to access tailored hand-outs, university blueprints, syllabus catalogs, and notes.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
+              <Link key={sem} to={`/notes-library/bpharma?sem=${sem}`}>
+                <motion.div
+                  whileHover={{ scale: 1.03, y: -4, borderColor: 'rgba(139,92,246,0.4)' }}
+                  className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md flex items-center gap-4 cursor-pointer transition-all hover:bg-gradient-to-tr hover:from-blue-600/5 hover:to-purple-600/5"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-purple-500/15 flex items-center justify-center font-black text-lg text-purple-400 border border-purple-500/20">
+                    S{sem}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-white">Semester {sem}</h4>
+                    <p className="text-xs text-gray-500">View Active Subject Notes</p>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-gray-600 ml-auto group-hover:translate-x-1 transition-transform" />
+                </motion.div>
+              </Link>
             ))}
           </div>
         </div>
-      </div>
-    </section>
-  );
-}
+      </section>
 
-// CTA Section
-function CTASection() {
-  return (
-    <section className="relative py-32 px-4">
-      <div className="max-w-4xl mx-auto text-center">
+      {/* Premium Lifetime Upgrade CTA Section */}
+      <section className="py-24 px-6 max-w-5xl mx-auto text-center relative z-10">
         <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          initial={{ opacity: 0, scale: 0.95 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
+          className="p-12 md:p-16 rounded-[3rem] bg-gradient-to-br from-[#1E293B] via-[#0F172A] to-[#1E293B] border border-blue-500/30 relative overflow-hidden shadow-[0_0_50px_rgba(59,130,246,0.2)]"
         >
-          <h2 className="text-5xl md:text-6xl font-black mb-6">
-            Ready to Start?
-          </h2>
-          <p className="text-xl text-gray-400 mb-12">
-            Join thousands of students already using NotesDrive
-          </p>
-          
-          <Link to="/notes-library">
-            <motion.button
-              whileHover={{ scale: 1.05, y: -5 }}
-              whileTap={{ scale: 0.95 }}
-              className="px-12 py-5 bg-gradient-to-r from-[#3B31B8] to-purple-600 rounded-2xl font-bold text-xl"
-            >
-              Explore Notes Library →
-            </motion.button>
-          </Link>
+          {/* Top highlight badge */}
+          <div className="absolute top-0 right-1/2 translate-x-1/2 bg-blue-600 text-white px-8 py-2.5 rounded-b-3xl font-bold uppercase text-[10px] tracking-widest shadow-md">
+            RECOMMENDED FOR GPAT & PCI EXAMS
+          </div>
+
+          <div className="max-w-2xl mx-auto flex flex-col items-center pt-4">
+            <Star className="w-16 h-16 text-yellow-400 fill-yellow-400 mb-6 animate-pulse" />
+            <h2 className="text-4xl md:text-5xl font-black text-white mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+              Unlock All B.Pharma Notes
+            </h2>
+            <p className="text-gray-400 text-base md:text-lg mb-8 leading-relaxed">
+              Get lifetime access to the entire B.Pharma library containing all subjects, exclusive mock GPAT study materials, and premium university templates for a one-time upgrade fee.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center gap-6 mb-10">
+              <div className="text-left">
+                <span className="text-xs text-gray-500 line-through block font-bold">REGULAR PRICE: ₹1,499</span>
+                <span className="text-5xl font-black text-blue-400">₹499 <span className="text-base text-gray-400 font-medium">/ Lifetime</span></span>
+              </div>
+              <div className="h-[2px] w-12 sm:h-12 sm:w-[2px] bg-white/10" />
+              <ul className="text-left space-y-2">
+                {[
+                  '100% Secure Checkout via Cashfree',
+                  'Unlimited High-Quality Downloads',
+                  'No Monthly Subscriptions',
+                  'Exclusive Handwritten Content'
+                ].map((item, i) => (
+                  <li key={i} className="flex items-center gap-2 text-sm text-gray-300 font-medium">
+                    <CheckCircle2 className="w-4 h-4 text-blue-400" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {userProfile?.isPremium ? (
+              <div className="px-8 py-4 bg-blue-500/10 border border-blue-500/30 text-blue-400 rounded-2xl font-bold flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-blue-400" />
+                Active Premium Access (Lifetime Pro)
+              </div>
+            ) : (
+              <Link to="/premium">
+                <motion.button
+                  whileHover={{ scale: 1.05, y: -4 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="px-10 py-5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold text-xl flex items-center gap-3 shadow-[0_0_30px_rgba(59,130,246,0.4)]"
+                >
+                  <Star className="w-6 h-6 text-yellow-300 fill-yellow-300" />
+                  Upgrade to Pro Now
+                </motion.button>
+              </Link>
+            )}
+          </div>
         </motion.div>
-      </div>
-    </section>
+      </section>
+
+      {/* Community / Footer Telegram Promo */}
+      <section className="py-16 px-6 border-t border-white/5 bg-[#161B22]/10 max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8 rounded-3xl mb-16">
+        <div>
+          <h3 className="text-2xl font-extrabold mb-2">Join the B.Pharma Circle</h3>
+          <p className="text-gray-400 text-sm">Get live job alerts, syllabus catalogs, exam updates, and peer support on Telegram.</p>
+        </div>
+        <a
+          href="https://t.me/your_channel"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-6 py-3.5 bg-blue-500/10 border border-blue-500/20 rounded-2xl text-blue-400 hover:bg-blue-500 hover:text-white font-bold flex items-center gap-2 transition-all duration-300 shadow-[0_0_20px_rgba(59,130,246,0.05)]"
+        >
+          <Send className="w-5 h-5" />
+          Join Telegram Channel
+        </a>
+      </section>
+
+    </div>
   );
 }

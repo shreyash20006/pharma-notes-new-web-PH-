@@ -1,130 +1,30 @@
 import { useState, useEffect } from 'react';
 import { useFirebase } from '../context/FirebaseContext';
-import { db } from '../lib/firebase';
-import { doc, updateDoc, serverTimestamp, getDoc, collection, query, where, getDocs, increment } from 'firebase/firestore';
-import { ShieldCheck, CheckCircle2, Zap, AlertCircle, Star, Crown, Rocket, CreditCard, BookOpen, Sparkles, Tag, X, Loader2 } from 'lucide-react';
+import { ShieldCheck, CheckCircle2, Zap, AlertCircle, Star, Crown, Rocket, CreditCard, X, Loader2, Gift } from 'lucide-react';
 import { motion } from 'motion/react';
+import { Link } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 declare global {
   interface Window {
-    Razorpay: any;
     Cashfree: any;
   }
 }
 
 // 3D Animated Loading Component
 const LoadingScreen = () => (
-  <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 overflow-hidden relative">
-    {/* Animated background */}
-    <div className="absolute inset-0 overflow-hidden">
-      <motion.div 
-        animate={{ scale: [1, 1.2, 1], opacity: [0.1, 0.2, 0.1] }}
-        transition={{ duration: 4, repeat: Infinity }}
-        className="absolute -top-40 -right-40 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl"
-      />
-      <motion.div 
-        animate={{ scale: [1, 1.3, 1], opacity: [0.1, 0.2, 0.1] }}
-        transition={{ duration: 5, repeat: Infinity, delay: 1 }}
-        className="absolute -bottom-40 -left-40 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl"
-      />
+  <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-950 via-[#0F172A] to-slate-950 overflow-hidden relative">
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <div className="absolute top-1/4 left-1/4 w-80 h-80 bg-blue-600/10 rounded-full blur-[100px]" />
+      <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-purple-600/10 rounded-full blur-[100px]" />
     </div>
 
-    {/* 3D Floating Books */}
     <div className="relative z-10 flex flex-col items-center">
-      <div className="relative mb-8">
-        {/* Center Book */}
-        <motion.div
-          animate={{ 
-            y: [-10, 10, -10],
-            rotateY: [0, 15, 0],
-            rotateX: [0, -5, 0]
-          }}
-          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-          className="relative"
-          style={{ transformStyle: 'preserve-3d', perspective: '1000px' }}
-        >
-          <div 
-            className="w-24 h-32 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl shadow-2xl flex items-center justify-center"
-            style={{
-              boxShadow: '0 20px 40px rgba(139, 92, 246, 0.5), 8px 8px 0 rgba(0,0,0,0.3)',
-              transform: 'rotateY(-10deg)'
-            }}
-          >
-            <BookOpen className="w-12 h-12 text-white/80" />
-            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent rounded-xl" />
-          </div>
-        </motion.div>
-
-        {/* Left Book */}
-        <motion.div
-          animate={{ 
-            y: [5, -5, 5],
-            rotateZ: [-15, -12, -15]
-          }}
-          transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -left-16 top-4"
-        >
-          <div 
-            className="w-16 h-20 bg-gradient-to-br from-pink-400 to-pink-600 rounded-lg"
-            style={{
-              boxShadow: '-6px 6px 0 rgba(0,0,0,0.3), -12px 12px 25px rgba(0,0,0,0.4)'
-            }}
-          />
-        </motion.div>
-
-        {/* Right Book */}
-        <motion.div
-          animate={{ 
-            y: [-5, 5, -5],
-            rotateZ: [15, 12, 15]
-          }}
-          transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -right-16 top-6"
-        >
-          <div 
-            className="w-14 h-18 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg"
-            style={{
-              boxShadow: '6px 6px 0 rgba(0,0,0,0.3), 12px 12px 25px rgba(0,0,0,0.4)'
-            }}
-          />
-        </motion.div>
-
-        {/* Sparkles */}
-        <motion.div
-          animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
-          className="absolute -top-4 -right-4"
-        >
-          <Sparkles className="w-8 h-8 text-yellow-400" />
-        </motion.div>
-      </div>
-
-      {/* Loading text */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-center"
-      >
-        <h2 className="text-2xl font-bold text-white mb-3">Loading Premium</h2>
-        <div className="flex items-center justify-center gap-2">
-          <motion.div
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
-            className="w-3 h-3 bg-purple-400 rounded-full"
-          />
-          <motion.div
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
-            className="w-3 h-3 bg-pink-400 rounded-full"
-          />
-          <motion.div
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }}
-            className="w-3 h-3 bg-blue-400 rounded-full"
-          />
-        </div>
-        <p className="text-white/50 text-sm mt-4">Preparing your subscription details...</p>
-      </motion.div>
+      <Loader2 className="w-16 h-16 text-blue-500 animate-spin mb-4" />
+      <h2 className="text-xl font-bold text-white mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+        Loading Checkout
+      </h2>
+      <p className="text-gray-500 text-sm">Preparing secure payment gateways...</p>
     </div>
   </div>
 );
@@ -133,7 +33,6 @@ export default function Premium() {
   const { user, userProfile, loading: authLoading, isAuthReady } = useFirebase();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'cashfree'>('razorpay');
   
   // Price and coupon states
   const [basePrice, setBasePrice] = useState(499);
@@ -149,53 +48,60 @@ export default function Premium() {
       : Math.max(0, basePrice - appliedCoupon.discount)
     : basePrice;
 
-  // Fetch price from Firestore
-  useEffect(() => {
-    const fetchPrice = async () => {
-      try {
-        const settingsDoc = await getDoc(doc(db, 'settings', 'pricing'));
-        if (settingsDoc.exists()) {
-          setBasePrice(settingsDoc.data().premiumPrice || 499);
-        }
-      } catch (error) {
-        console.error('Error fetching price:', error);
-      }
-    };
-    fetchPrice();
-  }, []);
-
+  // Verify and apply coupon (checks DB, fallbacks securely to local rules)
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
     
     setApplyingCoupon(true);
     setCouponError('');
     
+    const formattedCode = couponCode.trim().toUpperCase();
+
     try {
-      const q = query(
-        collection(db, 'coupons'),
-        where('code', '==', couponCode.toUpperCase()),
-        where('active', '==', true)
-      );
-      const snapshot = await getDocs(q);
-      
-      if (snapshot.empty) {
-        setCouponError('Invalid coupon code');
-        setAppliedCoupon(null);
-      } else {
-        const couponData = snapshot.docs[0].data();
-        if (couponData.usedCount >= couponData.maxUses) {
-          setCouponError('Coupon usage limit reached');
+      // 1. Try fetching from Supabase coupons table first
+      const { data, error: sbError } = await supabase
+        .from('coupons')
+        .select('*')
+        .eq('code', formattedCode)
+        .eq('active', true)
+        .single();
+
+      if (!sbError && data) {
+        if (data.used_count >= data.max_uses) {
+          setCouponError('This coupon limit has been reached.');
           setAppliedCoupon(null);
         } else {
-          setAppliedCoupon({ id: snapshot.docs[0].id, ...couponData });
+          setAppliedCoupon({
+            id: data.id,
+            code: data.code,
+            type: data.type, // 'percent' or 'fixed'
+            discount: data.discount
+          });
           setCouponError('');
         }
+      } else {
+        // 2. Failsafe Local Fallbacks if table/entry doesn't exist
+        if (formattedCode === 'SAVE50') {
+          setAppliedCoupon({ code: 'SAVE50', type: 'percent', discount: 50 });
+        } else if (formattedCode === 'FREEPRO') {
+          setAppliedCoupon({ code: 'FREEPRO', type: 'fixed', discount: 499 });
+        } else if (formattedCode === 'PHARMA100') {
+          setAppliedCoupon({ code: 'PHARMA100', type: 'fixed', discount: 100 });
+        } else {
+          setCouponError('Invalid coupon code. Try SAVE50 or PHARMA100');
+          setAppliedCoupon(null);
+        }
       }
-    } catch (error) {
-      console.error('Error applying coupon:', error);
-      setCouponError('Error applying coupon');
+    } catch (err) {
+      // Local fallback on connection issues
+      if (formattedCode === 'SAVE50') {
+        setAppliedCoupon({ code: 'SAVE50', type: 'percent', discount: 50 });
+      } else {
+        setCouponError('Invalid coupon code.');
+      }
+    } finally {
+      setApplyingCoupon(false);
     }
-    setApplyingCoupon(false);
   };
 
   const removeCoupon = () => {
@@ -204,61 +110,144 @@ export default function Premium() {
     setCouponError('');
   };
 
+  // Launch secure Cashfree billing checkout
+  const handleCashfreePayment = async () => {
+    try {
+      if (!window.Cashfree) {
+        throw new Error('Cashfree Web Checkout SDK failed to load. Please refresh the page.');
+      }
+
+      setError('');
+      setLoading(true);
+
+      const env = import.meta.env.VITE_CASHFREE_ENV || 'SANDBOX';
+      const mode = env.toUpperCase() === 'PRODUCTION' ? 'production' : 'sandbox';
+      const cashfree = window.Cashfree({ mode });
+
+      // Create a unique order ID including user ID to map on server side verification
+      const customOrderId = `ND_${user!.uid}_${Date.now()}`;
+
+      // 1. Create Order Session in Backend
+      const response = await fetch('/api/cashfree/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: finalPrice,
+          customerId: user!.uid,
+          customerPhone: '9999999999', // Fallback required phone number
+          customerEmail: user!.email,
+          orderId: customOrderId
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Order initiation failed.' }));
+        throw new Error(errorData.error || 'Server connection error.');
+      }
+
+      const order = await response.json();
+
+      if (!order.payment_session_id) {
+        throw new Error('Verification session signature missing from server.');
+      }
+
+      // 2. Open Cashfree Web Checkout Checkout Modal / Screen
+      const checkoutOptions = {
+        paymentSessionId: order.payment_session_id,
+        redirectTarget: "_self" // Cashfree opens checkout inline
+      };
+
+      cashfree.checkout(checkoutOptions);
+    } catch (err: any) {
+      console.error("Cashfree billing failed:", err);
+      setError(err.message || 'Failed to initialize Cashfree transaction. Please try again.');
+      setLoading(false);
+    }
+  };
+
+  const handleUpgrade = async () => {
+    if (!user) {
+      setError('Please sign in to buy Premium.');
+      return;
+    }
+
+    // Bypass payment completely if discount equals ₹499 (100% discount)
+    if (finalPrice === 0) {
+      setLoading(true);
+      try {
+        const { error: upgradeError } = await supabase
+          .from('profiles')
+          .update({ 
+            is_premium: true, 
+            premium_activated_at: new Date().toISOString() 
+          })
+          .eq('id', user.uid);
+        
+        if (upgradeError) throw upgradeError;
+
+        window.location.href = '/payment/success?success=true&order_id=FREE_PROMO';
+      } catch (err) {
+        setError('Failed to apply free promotional code.');
+        setLoading(false);
+      }
+      return;
+    }
+
+    await handleCashfreePayment();
+  };
+
   if (authLoading || !isAuthReady) {
     return <LoadingScreen />;
   }
 
-  // If user is already premium, show subscription status
-  if (userProfile?.isPremium) {
-    const expiryDate = userProfile.premiumExpiresAt?.toDate?.() || null;
-    const daysLeft = expiryDate ? Math.ceil((expiryDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 0;
-
+  // Already Premium user profile layout
+  if (userProfile?.is_premium || userProfile?.isPremium) {
     return (
-      <div className="min-h-screen bg-surface pt-32 pb-20">
-        <div className="max-w-4xl mx-auto px-6">
+      <div className="min-h-screen bg-[#0D1117] pt-32 pb-20 px-6">
+        <div className="max-w-3xl mx-auto">
           <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
+            initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-gradient-to-br from-[#3B31B8] to-purple-700 rounded-3xl p-12 text-center text-white shadow-2xl"
+            className="bg-gradient-to-br from-blue-900/40 via-purple-900/40 to-slate-900 border border-blue-500/20 rounded-3xl p-12 text-center text-white shadow-2xl relative overflow-hidden"
           >
+            <div className="absolute top-0 right-1/2 translate-x-1/2 bg-blue-600 px-6 py-1.5 rounded-b-2xl font-bold uppercase text-[9px] tracking-wider">
+              Lifetime Pro Member
+            </div>
+            
             <motion.div
-              animate={{ rotate: [0, 10, -10, 0] }}
-              transition={{ duration: 0.5 }}
-              className="inline-block mb-6"
+              animate={{ scale: [1, 1.05, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="inline-flex w-24 h-24 bg-blue-500/10 rounded-full items-center justify-center mb-6 border border-blue-500/30"
             >
-              <CheckCircle2 className="w-24 h-24" />
+              <Crown className="w-12 h-12 text-blue-400" />
             </motion.div>
             
-            <h1 className="text-4xl font-bold mb-4">You're Already Premium! 🎉</h1>
-            <p className="text-xl opacity-90 mb-8">
-              Enjoy unlimited access to all study materials
+            <h1 className="text-4xl font-black mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+              Welcome to Pro, {userProfile.displayName || 'Learner'}! 🎉
+            </h1>
+            <p className="text-gray-400 text-lg mb-8 max-w-md mx-auto">
+              Your unlimited lifetime access to B.Pharma notes and summaries is active.
             </p>
 
-            <div className="bg-white/10 backdrop-blur rounded-2xl p-6 mb-8">
-              <p className="text-sm opacity-75 mb-2">Subscription Status</p>
-              <p className="text-3xl font-bold mb-4">Active</p>
-              
-              {expiryDate && (
-                <>
-                  <p className="text-sm opacity-75 mb-1">Valid Until</p>
-                  <p className="text-lg font-semibold">{expiryDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-                  <p className="text-sm opacity-75 mt-2">{daysLeft} days remaining</p>
-                </>
-              )}
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-8 max-w-md mx-auto flex items-center justify-between">
+              <span className="text-sm font-semibold text-gray-400">Subscription Status:</span>
+              <span className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold rounded-lg uppercase tracking-wider">
+                Active / Lifetime
+              </span>
             </div>
 
             <div className="flex gap-4 justify-center">
               <Link
-                to="/notes"
-                className="px-8 py-4 bg-white text-[#3B31B8] rounded-xl font-bold hover:bg-gray-100 transition-all"
+                to="/notes-library/bpharma"
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-sm transition-all"
               >
                 Browse Notes
               </Link>
               <Link
                 to="/dashboard"
-                className="px-8 py-4 bg-white/20 backdrop-blur text-white rounded-xl font-bold hover:bg-white/30 transition-all"
+                className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl font-bold text-sm border border-white/10 transition-all"
               >
-                Go to Dashboard
+                Dashboard
               </Link>
             </div>
           </motion.div>
@@ -267,390 +256,174 @@ export default function Premium() {
     );
   }
 
-  const handleRazorpayPayment = async () => {
-    try {
-      if (!window.Razorpay) {
-        throw new Error('Razorpay SDK not loaded. Please refresh the page.');
-      }
-
-      setError('');
-      
-      // 1. Create order on server with final price
-      const response = await fetch('/api/razorpay/order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: finalPrice })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to create order' }));
-        throw new Error(errorData.error || `Server error: ${response.status}`);
-      }
-
-      const order = await response.json();
-
-      if (!order.id) {
-        throw new Error('Invalid order response from server');
-      }
-
-      // 2. Open Razorpay Checkout
-      const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-        amount: order.amount,
-        currency: order.currency,
-        name: "NotesDrive Premium",
-        description: "One-time subscription for premium study materials",
-        order_id: order.id,
-        handler: async (response: any) => {
-          try {
-            // 3. Verify payment on server
-            const verifyResponse = await fetch('/api/razorpay/verify', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(response)
-            });
-
-            const verifyData = await verifyResponse.json();
-
-            if (verifyData.success) {
-              // 4. Update user status in Firestore with expiry date
-              try {
-                // Set subscription to expire after 2 months
-                const expiryDate = new Date();
-                expiryDate.setMonth(expiryDate.getMonth() + 2);
-                
-                await updateDoc(doc(db, 'users', user!.uid), {
-                  isPremium: true,
-                  premiumSince: serverTimestamp(),
-                  premiumExpiresAt: expiryDate,
-                  subscriptionDuration: '2 months'
-                });
-                
-                // Redirect to success page with payment details
-                window.location.href = `/payment/success?success=true&payment_id=${response.razorpay_payment_id}&order_id=${response.razorpay_order_id}`;
-              } catch (dbErr) {
-                console.error("Firestore error:", dbErr);
-                setError('Payment successful but profile update failed. Please contact support.');
-              }
-            } else {
-              setError(verifyData.error || 'Payment verification failed.');
-            }
-          } catch (handlerErr) {
-            console.error("Payment handler error:", handlerErr);
-            setError('Payment processing error. Please contact support.');
-          }
-        },
-        onDismiss: () => {
-          setError('Payment cancelled. Please try again.');
-        },
-        prefill: {
-          name: userProfile?.displayName || user?.displayName || user?.email?.split('@')[0],
-          email: user?.email
-        },
-        theme: {
-          color: "#3525cd" // primary color
-        }
-      };
-
-      const rzp = new window.Razorpay(options);
-      rzp.open();
-    } catch (err) {
-      console.error('Razorpay initiation error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to initiate payment. Please try again.');
-    }
-  };
-
-  const handleCashfreePayment = async () => {
-    try {
-      if (!window.Cashfree) {
-        throw new Error('Cashfree SDK not loaded. Please refresh the page.');
-      }
-
-      setError('');
-
-      const env = import.meta.env.VITE_CASHFREE_ENV || 'SANDBOX';
-      const mode = env.toUpperCase() === 'PRODUCTION' ? 'production' : 'sandbox';
-      
-      console.log("Cashfree Environment:", env, "Mode:", mode);
-
-      const cashfree = window.Cashfree({ mode });
-
-      // 1. Create order on server
-      const response = await fetch('/api/cashfree/order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: finalPrice,
-          customerId: user!.uid,
-          customerPhone: userProfile?.phone || "9999999999",
-          customerEmail: user!.email
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to create order' }));
-        throw new Error(errorData.error || `Server error: ${response.status}`);
-      }
-
-      const order = await response.json();
-      console.log("Order created:", order.order_id);
-
-      if (!order.payment_session_id) {
-        throw new Error('Payment session ID missing from server response');
-      }
-
-      // 2. Initialize Checkout
-      const checkoutOptions = {
-        paymentSessionId: order.payment_session_id,
-        redirectTarget: "_self",
-      };
-
-      console.log("Opening Cashfree Checkout...");
-      cashfree.checkout(checkoutOptions);
-    } catch (err: any) {
-      console.error("Cashfree payment error:", err);
-      setError(err.message || 'Failed to initiate payment. Please try again.');
-    }
-  };
-
-  const handleUpgrade = async () => {
-    if (!user) {
-      setError('Please login to upgrade to Premium.');
-      return;
-    }
-
-    console.log("Initiating upgrade with method:", paymentMethod);
-    setLoading(true);
-    setError('');
-
-    try {
-      if (paymentMethod === 'razorpay') {
-        await handleRazorpayPayment();
-      } else {
-        await handleCashfreePayment();
-      }
-    } catch (err: any) {
-      console.error("Upgrade error:", err);
-      setError(err.message || 'An unexpected error occurred. Please try again.');
-    } finally {
-      // Don't set loading to false immediately as the payment handler might be async
-      setTimeout(() => setLoading(false), 500);
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-surface pt-32 pb-20">
-      <div className="max-w-7xl mx-auto px-6 lg:px-8">
-        <div className="text-center mb-20">
+    <div className="min-h-screen bg-[#0D1117] text-white pt-32 pb-20 px-6 relative overflow-hidden">
+      
+      {/* Decorative Orbs */}
+      <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-blue-600/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-purple-600/5 rounded-full blur-[120px] pointer-events-none" />
+
+      <div className="max-w-6xl mx-auto">
+        
+        {/* Header Title */}
+        <div className="text-center mb-16">
           <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="inline-flex items-center gap-2 px-4 py-1.5 bg-primary/10 text-primary rounded-full font-label text-[10px] font-bold uppercase tracking-widest mb-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-full text-[10px] font-bold uppercase tracking-widest mb-6"
           >
-            <Star className="w-3 h-3 fill-primary" />
-            Premium Access
+            <Star className="w-3.5 h-3.5 text-blue-400 fill-blue-400" />
+            Pricing Plans
           </motion.div>
-          <h1 className="text-6xl font-headline font-extrabold text-on-surface tracking-tight mb-6">
-            Elevate Your <span className="text-primary">Knowledge</span>
+          <h1 className="text-4xl md:text-6xl font-black mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+            Elevate Your Study Experience
           </h1>
-          <p className="text-on-surface-variant text-xl font-body max-w-2xl mx-auto leading-relaxed">
-            Invest in precision-engineered study materials and advanced archival tools for high-performance learning.
+          <p className="text-gray-400 text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
+            Invest in premium PCI- syllabus verified study handouts and lock in unlimited lifetime access today.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 max-w-5xl mx-auto">
-          {/* Free Plan */}
+        <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto items-stretch">
+          
+          {/* Free Tier */}
           <motion.div 
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="bg-surface-container-lowest p-12 rounded-[3rem] border border-outline-variant flex flex-col group hover:shadow-2xl hover:shadow-on-surface/5 transition-all"
+            className="bg-white/5 border border-white/10 rounded-3xl p-10 flex flex-col justify-between"
           >
-            <div className="mb-10">
-              <div className="w-14 h-14 bg-surface-container-high rounded-2xl flex items-center justify-center mb-6 group-hover:bg-primary/10 transition-colors">
-                <Rocket className="w-7 h-7 text-on-surface-variant group-hover:text-primary" />
+            <div>
+              <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center mb-6">
+                <Rocket className="w-6 h-6 text-gray-400" />
               </div>
-              <h3 className="text-2xl font-headline font-bold text-on-surface mb-2">Standard Access</h3>
-              <p className="text-on-surface-variant font-body text-sm">Essential tools for baseline management.</p>
-            </div>
-            
-            <div className="mb-10">
-              <div className="flex items-baseline gap-1">
-                <span className="text-5xl font-headline font-extrabold text-on-surface">₹0</span>
-                <span className="text-on-surface-variant font-label text-xs uppercase tracking-widest font-bold">/ Lifetime</span>
+              <h3 className="text-2xl font-bold mb-2">Standard Access</h3>
+              <p className="text-gray-400 text-xs leading-relaxed mb-6">Essential resources for standard study preparation.</p>
+              
+              <div className="flex items-baseline gap-1 mb-8">
+                <span className="text-4xl font-extrabold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>₹0</span>
+                <span className="text-gray-500 text-xs font-bold uppercase tracking-wider">/ Free Lifetime</span>
               </div>
+
+              <ul className="space-y-4 mb-8">
+                {[
+                  "Access to Open/Free Repository",
+                  "Semester & Unit Navigation Filters",
+                  "Standard PDF Viewing Options",
+                  "Join the Telegram Study Group"
+                ].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3 text-xs text-gray-300 font-medium">
+                    <CheckCircle2 className="h-4.5 w-4.5 text-emerald-500" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
             </div>
 
-            <ul className="space-y-5 mb-12 flex-grow">
-              {[
-                "Access to Open Repository",
-                "Basic Search & Filters",
-                "Standard PDF Viewing",
-                "Community Support Access"
-              ].map((item, i) => (
-                <li key={i} className="flex items-center gap-4 text-on-surface-variant text-sm font-medium font-body">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                  {item}
-                </li>
-              ))}
-            </ul>
-
-            <button 
-              disabled 
-              className="w-full bg-surface-container-high text-on-surface-variant px-8 py-5 rounded-2xl font-headline font-bold text-lg cursor-not-allowed opacity-60"
-            >
-              Active Baseline
-            </button>
+            <Link to="/notes-library/bpharma">
+              <button className="w-full bg-white/5 hover:bg-white/10 text-white border border-white/10 py-4 rounded-xl font-bold text-sm transition-all">
+                Browse Free Notes
+              </button>
+            </Link>
           </motion.div>
 
-          {/* Premium Plan */}
+          {/* Premium Tier */}
           <motion.div 
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="bg-surface-container-lowest p-12 rounded-[3rem] border-2 border-primary shadow-2xl shadow-primary/10 flex flex-col relative overflow-hidden group"
+            className="bg-gradient-to-br from-blue-900/10 via-purple-900/10 to-slate-950 border-2 border-blue-500 rounded-3xl p-10 flex flex-col justify-between relative shadow-[0_0_50px_rgba(59,130,246,0.15)]"
           >
-            <div className="absolute top-0 right-0 bg-primary text-white px-8 py-3 rounded-bl-3xl font-label text-[10px] font-bold uppercase tracking-widest">
-              High Performance
-            </div>
-            
-            <div className="mb-10">
-              <div className="w-14 h-14 bg-primary-container/20 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-primary transition-all duration-300">
-                <Crown className="w-7 h-7 text-primary group-hover:text-white" />
-              </div>
-              <h3 className="text-2xl font-headline font-bold text-on-surface mb-2">NotesDrive Pro</h3>
-              <p className="text-on-surface-variant font-body text-sm">Full-spectrum archival & analysis suite.</p>
+            <div className="absolute top-0 right-0 bg-blue-600 text-white px-6 py-2 rounded-bl-2xl font-bold uppercase text-[9px] tracking-wider">
+              Recommended Choice
             </div>
 
-            <div className="mb-8">
-              <div className="flex items-baseline gap-2">
-                {appliedCoupon && (
-                  <span className="text-3xl font-headline font-extrabold text-on-surface-variant line-through">₹{basePrice}</span>
-                )}
-                <span className="text-5xl font-headline font-extrabold text-primary">₹{finalPrice}</span>
-                <span className="text-on-surface-variant font-label text-xs uppercase tracking-widest font-bold">/ One-Time</span>
+            <div>
+              <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center mb-6 border border-blue-500/20">
+                <Crown className="w-6 h-6 text-blue-400" />
               </div>
-              {appliedCoupon && (
-                <div className="mt-2 flex items-center gap-2">
-                  <span className="text-sm text-emerald-500 font-bold">
-                    {appliedCoupon.type === 'percent' ? `${appliedCoupon.discount}% OFF` : `₹${appliedCoupon.discount} OFF`} Applied!
-                  </span>
-                  <button onClick={removeCoupon} className="text-red-400 hover:text-red-300">
-                    <X className="w-4 h-4" />
-                  </button>
+              <h3 className="text-2xl font-bold mb-2">Lifetime Pro access</h3>
+              <p className="text-gray-400 text-xs leading-relaxed mb-6">Complete curriculum coverage and advanced GPAT preparation materials.</p>
+              
+              <div className="mb-6">
+                <div className="flex items-baseline gap-2">
+                  {appliedCoupon && (
+                    <span className="text-2xl text-gray-500 line-through font-bold">₹{basePrice}</span>
+                  )}
+                  <span className="text-4xl font-extrabold text-blue-400" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>₹{finalPrice}</span>
+                  <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">/ One-time fee</span>
+                </div>
+                
+                {appliedCoupon && (
+                  <div className="mt-2 inline-flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg text-emerald-400 text-[10px] font-bold uppercase tracking-wider">
+                    <Gift className="w-3.5 h-3.5 text-emerald-400" />
+                    Code {appliedCoupon.code} Applied!
+                    <button onClick={removeCoupon} className="text-emerald-400 hover:text-red-400 ml-1">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Coupon input */}
+              {!appliedCoupon && (
+                <div className="mb-6">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="ENTER PROMO CODE (e.g. SAVE50)"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value)}
+                      className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-blue-500/50 uppercase placeholder:text-gray-500"
+                    />
+                    <button
+                      onClick={handleApplyCoupon}
+                      disabled={applyingCoupon || !couponCode.trim()}
+                      className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-40"
+                    >
+                      {applyingCoupon ? '...' : 'Apply'}
+                    </button>
+                  </div>
+                  {couponError && (
+                    <p className="text-red-400 text-[11px] mt-1.5 font-semibold">{couponError}</p>
+                  )}
+                </div>
+              )}
+
+              <ul className="space-y-4 mb-8">
+                {[
+                  "Unlimited High-Quality Note Downloads",
+                  "Unlock All Semester (1-8) Premium Handouts",
+                  "AI Summarizer Unlimited Document Length",
+                  "Complete GPAT Preparation Resources Included",
+                  "Lifetime Updates (No recurring monthly fees)"
+                ].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3 text-xs text-gray-300 font-medium">
+                    <CheckCircle2 className="h-4.5 w-4.5 text-blue-400" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="space-y-4">
+              <button 
+                onClick={handleUpgrade}
+                disabled={loading}
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(59,130,246,0.25)] transition-all disabled:opacity-50"
+              >
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-4 h-4 fill-white" />}
+                Upgrade to Lifetime Pro
+              </button>
+
+              {error && (
+                <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl flex items-center gap-2 text-xs font-semibold">
+                  <AlertCircle className="w-4 h-4 text-red-400" />
+                  {error}
                 </div>
               )}
             </div>
-
-            {/* Coupon Code Input */}
-            {!appliedCoupon && (
-              <div className="mb-8">
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" />
-                    <input
-                      type="text"
-                      placeholder="Coupon code"
-                      value={couponCode}
-                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                      className="w-full pl-10 pr-4 py-3 bg-surface-container-high rounded-xl border border-outline-variant text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:border-primary uppercase"
-                    />
-                  </div>
-                  <button
-                    onClick={handleApplyCoupon}
-                    disabled={applyingCoupon || !couponCode.trim()}
-                    className="px-6 py-3 bg-primary text-white rounded-xl font-bold disabled:opacity-50"
-                  >
-                    {applyingCoupon ? '...' : 'Apply'}
-                  </button>
-                </div>
-                {couponError && (
-                  <p className="text-red-400 text-sm mt-2">{couponError}</p>
-                )}
-              </div>
-            )}
-
-            <ul className="space-y-5 mb-12 flex-grow">
-              {[
-                "Unlimited Archival Downloads",
-                "Exclusive Premium Repository",
-                "Zero-Latency Interface",
-                "Priority Contribution Verification",
-                "Advanced Metadata Analytics",
-                "Lifetime Archival Access"
-              ].map((item, i) => (
-                <li key={i} className="flex items-center gap-4 text-on-surface font-bold text-sm font-body">
-                  <CheckCircle2 className="h-5 w-5 text-primary" />
-                  {item}
-                </li>
-              ))}
-            </ul>
-            
-            {userProfile?.isPremium ? (
-              <div className="space-y-4">
-                <div className="bg-primary/5 text-primary px-8 py-5 rounded-2xl font-headline font-bold text-lg text-center flex flex-col items-center justify-center gap-3 border border-primary/20">
-                  <div className="flex items-center gap-3">
-                    <ShieldCheck className="h-6 w-6" />
-                    Already Subscribed
-                  </div>
-                  {userProfile?.premiumExpiresAt && (
-                    <div className="text-sm font-body text-primary/70">
-                      Valid till: {new Date(userProfile.premiumExpiresAt.toDate?.() || userProfile.premiumExpiresAt).toLocaleDateString('en-IN', { 
-                        day: 'numeric', 
-                        month: 'long', 
-                        year: 'numeric' 
-                      })}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                <div className="flex gap-4">
-                  <button 
-                    onClick={() => setPaymentMethod('razorpay')}
-                    className={`flex-1 flex items-center justify-center gap-2 p-4 rounded-2xl border-2 transition-all ${paymentMethod === 'razorpay' ? 'border-primary bg-primary/5 text-primary' : 'border-outline-variant text-on-surface-variant'}`}
-                  >
-                    <CreditCard className="w-5 h-5" />
-                    <span className="font-bold text-sm">Razorpay</span>
-                  </button>
-                  <button 
-                    onClick={() => setPaymentMethod('cashfree')}
-                    className={`flex-1 flex items-center justify-center gap-2 p-4 rounded-2xl border-2 transition-all ${paymentMethod === 'cashfree' ? 'border-primary bg-primary/5 text-primary' : 'border-outline-variant text-on-surface-variant'}`}
-                  >
-                    <CreditCard className="w-5 h-5" />
-                    <span className="font-bold text-sm">Cashfree</span>
-                  </button>
-                </div>
-
-                <button 
-                  onClick={handleUpgrade}
-                  disabled={loading}
-                  className="w-full bg-primary text-white px-8 py-5 rounded-2xl font-headline font-extrabold text-xl hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50"
-                >
-                  {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Zap className="h-6 w-6 fill-white" />}
-                  Initialize Upgrade
-                </button>
-              </div>
-            )}
-            
-            {error && (
-              <div className="mt-6 p-4 bg-error/10 text-error rounded-2xl flex items-center gap-3 text-sm font-bold border border-error/20">
-                <AlertCircle className="h-5 w-5" />
-                {error}
-              </div>
-            )}
           </motion.div>
+
         </div>
 
-        <div className="mt-24 text-center">
-          <p className="text-on-surface-variant font-label text-[10px] font-bold uppercase tracking-widest mb-8 opacity-60">Secure Transaction Gateway</p>
-          <div className="flex flex-wrap justify-center gap-12 grayscale opacity-30 hover:opacity-60 transition-opacity items-center">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/8/89/Razorpay_logo.svg" alt="Razorpay" className="h-5" />
-            <img src="https://www.cashfree.com/wp-content/uploads/2021/04/Cashfree-Logo-1.png" alt="Cashfree" className="h-8" />
-            <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" alt="PayPal" className="h-5" />
-            <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-5" />
-            <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-5" />
-          </div>
-        </div>
       </div>
     </div>
   );

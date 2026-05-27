@@ -1,46 +1,38 @@
-import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, GithubAuthProvider, signInWithPopup, signOut } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { supabase } from './supabase';
 
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+// Bridge db and auth to avoid breaking existing imports
+export const auth: any = {
+  signOut: () => supabase.auth.signOut(),
+  currentUser: null,
 };
+export const db: any = {};
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-
-// Services
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-
-// Google provider
-const googleProvider = new GoogleAuthProvider();
-
-// GitHub provider
-const githubProvider = new GithubAuthProvider();
-
-// Sign in with Google (popup - more reliable than redirect on Vercel)
+// Google sign-in wrapper using Supabase OAuth
 export const signInWithGoogle = () => {
-  return signInWithPopup(auth, googleProvider);
+  return supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.origin + '/notes'
+    }
+  });
 };
 
-// Sign in with GitHub
+// GitHub sign-in wrapper using Supabase OAuth
 export const signInWithGithub = () => {
-  return signInWithPopup(auth, githubProvider);
+  return supabase.auth.signInWithOAuth({
+    provider: 'github',
+    options: {
+      redirectTo: window.location.origin + '/notes'
+    }
+  });
 };
 
-// ✅ LOGOUT (IMPORTANT FIX)
+// Logout wrapper using Supabase auth
 export const logout = () => {
-  return signOut(auth);
+  return supabase.auth.signOut();
 };
 
-// Operation types for error handling
+// Keep existing enum and error helpers intact
 export enum OperationType {
   CREATE = 'create',
   READ = 'read',
@@ -48,26 +40,16 @@ export enum OperationType {
   DELETE = 'delete'
 }
 
-// Firestore error handler
 export const handleFirestoreError = (
   error: unknown,
   operation: OperationType,
   collection: string
 ): string => {
-  console.error(`Firestore ${operation} error on ${collection}:`, error);
+  console.error(`Database ${operation} error on ${collection}:`, error);
   
   if (error instanceof Error) {
-    // Permission denied
-    if (error.message.includes('permission-denied')) {
+    if (error.message.includes('permission') || error.message.includes('RLS')) {
       return 'You do not have permission to perform this action.';
-    }
-    // Not found
-    if (error.message.includes('not-found')) {
-      return 'The requested document was not found.';
-    }
-    // Network error
-    if (error.message.includes('unavailable') || error.message.includes('network')) {
-      return 'Network error. Please check your connection.';
     }
     return error.message;
   }

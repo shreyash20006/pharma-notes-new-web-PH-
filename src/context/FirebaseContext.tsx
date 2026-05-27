@@ -1,17 +1,18 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from '../lib/firebase';
+import { supabase } from '../lib/supabase';
+import { User } from '@supabase/supabase-js';
 
-interface FirebaseContextType {
-  user: User | null;
+interface AuthContextType {
+  user: any | null;
   userProfile: any | null;
   loading: boolean;
   isAuthReady: boolean;
   isAdmin: boolean;
+  signOut: () => Promise<void>;
+  signInWithGoogle: () => Promise<any>;
 }
 
-const FirebaseContext = createContext<FirebaseContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Admin emails
 const ADMIN_EMAILS = ['notesdriveshop@gmail.com', 'shreyash20006@gmail.com'];
@@ -24,89 +25,127 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const isAdmin = user?.email ? ADMIN_EMAILS.includes(user.email) : false;
 
+  const fetchProfile = async (uid: string, email: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', uid)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching profile:', error);
+      }
+
+      if (data) {
+        setUserProfile({
+          uid,
+          email,
+          displayName: data.full_name || email.split('@')[0],
+          photoURL: data.avatar_url,
+          isPremium: data.is_premium || false,
+          role: ADMIN_EMAILS.includes(email) ? 'admin' : 'user',
+          ...data
+        });
+      } else {
+        // Create profile in background if it does not exist (fallback if DB trigger didn't fire)
+        const name = email.split('@')[0];
+        const newProfile = {
+          id: uid,
+          email,
+          full_name: name,
+          is_premium: false
+        };
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert(newProfile);
+
+        if (insertError) {
+          console.error('Error creating fallback profile:', insertError);
+        }
+
+        setUserProfile({
+          uid,
+          email,
+          displayName: name,
+          isPremium: false,
+          role: ADMIN_EMAILS.includes(email) ? 'admin' : 'user',
+          ...newProfile
+        });
+      }
+    } catch (e) {
+      console.error('Profile fetch failed:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
-      setIsAuthReady(true);
-      
-      if (!currentUser) {
+    // 1. Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        const mappedUser = {
+          ...session.user,
+          uid: session.user.id,
+          displayName: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
+          photoURL: session.user.user_metadata?.avatar_url || ''
+        } as any;
+        setUser(mappedUser);
+        fetchProfile(session.user.id, session.user.email || '');
+      } else {
+        setUser(null);
         setUserProfile(null);
         setLoading(false);
-        return;
       }
-
-      // Set basic profile immediately from auth (INSTANT)
-      const basicProfile = {
-        uid: currentUser.uid,
-        email: currentUser.email,
-        displayName: currentUser.displayName,
-        photoURL: currentUser.photoURL,
-        isPremium: false,
-        role: ADMIN_EMAILS.includes(currentUser.email || '') ? 'admin' : 'user'
-      };
-      setUserProfile(basicProfile);
-      setLoading(false); // Stop loading immediately!
-
-      // Fetch full profile in background (non-blocking)
-      try {
-        const profileDoc = await getDoc(doc(db, 'users', currentUser.uid));
-        
-        if (profileDoc.exists()) {
-          const profileData = profileDoc.data();
-          
-          // Check if subscription has expired
-          let isPremiumActive = profileData.isPremium || false;
-          
-          if (isPremiumActive && profileData.premiumExpiresAt) {
-            const expiryDate = profileData.premiumExpiresAt.toDate ? 
-              profileData.premiumExpiresAt.toDate() : 
-              new Date(profileData.premiumExpiresAt);
-            
-            const now = new Date();
-            
-            // If subscription has expired, update Firestore
-            if (now > expiryDate) {
-              isPremiumActive = false;
-              
-              // Update Firestore to reflect expired status
-              await setDoc(doc(db, 'users', currentUser.uid), {
-                isPremium: false,
-                subscriptionExpired: true,
-                expiredAt: serverTimestamp()
-              }, { merge: true }).catch(console.error);
-            }
-          }
-          
-          setUserProfile({ 
-            ...basicProfile, 
-            ...profileData,
-            isPremium: isPremiumActive 
-          });
-        } else {
-          // Create profile in background
-          setDoc(doc(db, 'users', currentUser.uid), {
-            ...basicProfile,
-            createdAt: serverTimestamp(),
-          }, { merge: true }).catch(console.error);
-        }
-      } catch (error) {
-        console.error("Firestore error (non-blocking):", error);
-        // Keep using basic profile - no blocking
-      }
+      setIsAuthReady(true);
     });
 
-    return () => unsubscribeAuth();
+    // 2. Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session) {
+        const mappedUser = {
+          ...session.user,
+          uid: session.user.id,
+          displayName: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
+          photoURL: session.user.user_metadata?.avatar_url || ''
+        } as any;
+        setUser(mappedUser);
+        fetchProfile(session.user.id, session.user.email || '');
+      } else {
+        setUser(null);
+        setUserProfile(null);
+        setLoading(false);
+      }
+      setIsAuthReady(true);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
+  const signOut = async () => {
+    await supabase.auth.signOut();
+  };
+
+  const signInWithGoogle = async () => {
+    return supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin + '/notes'
+      }
+    });
+  };
+
   return (
-    <FirebaseContext.Provider value={{ user, userProfile, loading, isAuthReady, isAdmin }}>
+    <AuthContext.Provider value={{ user, userProfile, loading, isAuthReady, isAdmin, signOut, signInWithGoogle }}>
       {children}
-    </FirebaseContext.Provider>
+    </AuthContext.Provider>
   );
 };
 
 export const useFirebase = () => {
-  const context = useContext(FirebaseContext);
+  const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useFirebase must be used within a FirebaseProvider');
   }

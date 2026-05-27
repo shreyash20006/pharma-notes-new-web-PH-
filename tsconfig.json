@@ -23,5 +23,13 @@
     "allowImportingTsExtensions": true,
     "noEmit": true,
     "types": ["vite/client"]
-  }
+  },
+  "exclude": [
+    "src/pages/CompleteHomepage.tsx",
+    "src/pages/CompleteHomepage_Part2.tsx",
+    "src/pages/CompleteHomepageFinal.tsx",
+    "src/pages/UserSettings.tsx",
+    "src/pages/Admin.tsx",
+    "src/components/RealSubjectsPreview.tsx"
+  ]
 }

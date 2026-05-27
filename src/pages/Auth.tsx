@@ -14,19 +14,10 @@ export default function Auth() {
     setError(null);
 
     try {
-      const result = await signInWithGoogle();
-      if (result.user) {
-        navigate('/dashboard');
-      }
+      await signInWithGoogle();
     } catch (err: any) {
       console.error('Login error:', err);
-      if (err.code === 'auth/popup-closed-by-user') {
-        setError('Sign-in cancelled. Please try again.');
-      } else if (err.code === 'auth/popup-blocked') {
-        setError('Popup blocked. Please allow popups for this site.');
-      } else {
-        setError(err.message || 'Failed to sign in. Please try again.');
-      }
+      setError(err.message || 'Failed to sign in. Please try again.');
     } finally {
       setLoading(null);
     }
@@ -37,21 +28,10 @@ export default function Auth() {
     setError(null);
 
     try {
-      const result = await signInWithGithub();
-      if (result.user) {
-        navigate('/dashboard');
-      }
+      await signInWithGithub();
     } catch (err: any) {
       console.error('GitHub login error:', err);
-      if (err.code === 'auth/popup-closed-by-user') {
-        setError('Sign-in cancelled. Please try again.');
-      } else if (err.code === 'auth/popup-blocked') {
-        setError('Popup blocked. Please allow popups for this site.');
-      } else if (err.code === 'auth/account-exists-with-different-credential') {
-        setError('An account already exists with this email. Try signing in with Google.');
-      } else {
-        setError(err.message || 'Failed to sign in with GitHub. Please try again.');
-      }
+      setError(err.message || 'Failed to sign in with GitHub. Please try again.');
     } finally {
       setLoading(null);
     }

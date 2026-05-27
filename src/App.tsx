@@ -74,13 +74,13 @@ export default function App() {
             <Route path="/notes-library/btech/:branch" element={<><Navbar /><SubjectSelection /></>} />
             <Route path="/notes-library/bpharma" element={<><Navbar /><BpharmaNotesPage /></>} />
             <Route path="/notes-library/:stream/:branch/:semester/:subject" element={<><Navbar /><SubjectPDFs /></>} />
-            <Route path="/pricing-plans" element={<Navigate to="/" replace />} />
+            <Route path="/pricing-plans" element={<Navigate to="/premium" replace />} />
             <Route path="/student-dashboard" element={<><Navbar /><StudentDashboard /></>} />
             <Route path="/summarizer" element={<><Navbar /><Summarizer /></>} />
             <Route path="/quiz" element={<><Navbar /><Quiz /></>} />
             <Route path="/dashboard" element={<><Navbar /><Dashboard /></>} />
-            <Route path="/premium" element={<Navigate to="/" replace />} />
-            <Route path="/pricing" element={<Navigate to="/" replace />} />
+            <Route path="/premium" element={<><Navbar /><Premium /></>} />
+            <Route path="/pricing" element={<><Navbar /><Premium /></>} />
             <Route path="/upload" element={<><Navbar /><Upload /></>} />
             <Route path="/auth" element={<><Navbar /><Auth /></>} />
             <Route path="/contact" element={<><Navbar /><Contact /></>} />
@@ -88,7 +88,7 @@ export default function App() {
             <Route path="/refunds" element={<><Navbar /><Refunds /></>} />
             <Route path="/admin" element={<><Navbar /><Admin /></>} />
             <Route path="/settings" element={<><Navbar /><UserSettings /></>} />
-            <Route path="/payment/success" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/payment/success" element={<><Navbar /><PaymentSuccess /></>} />
           </Routes>
         </main>
         <AnimatedFooter />

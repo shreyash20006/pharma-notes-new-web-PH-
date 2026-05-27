@@ -6,6 +6,7 @@ import Razorpay from "razorpay";
 import crypto from "crypto";
 import { Cashfree } from "cashfree-pg";
 import dotenv from "dotenv";
+import { createClient } from "@supabase/supabase-js";
 
 // Load environment variables immediately
 dotenv.config();
@@ -15,6 +16,23 @@ async function startServer() {
   const PORT = parseInt(process.env.PORT || '3000', 10);
 
   app.use(express.json());
+
+  // Initialize Supabase Admin Client using the secure Service Role Key
+  const getSupabaseAdmin = () => {
+    const supabaseUrl = process.env.VITE_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error("Supabase URL and Service Role Key are missing in server environment. Please define VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.");
+    }
+
+    return createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false
+      }
+    });
+  };
 
   // Razorpay lazy initialization helper
   const getRazorpay = () => {
@@ -60,7 +78,7 @@ async function startServer() {
     }
   };
 
-  // API routes
+  // Razorpay API routes
   app.post("/api/razorpay/order", async (req, res) => {
     try {
       const razorpay = getRazorpay();
@@ -79,7 +97,6 @@ async function startServer() {
       const order = await razorpay.orders.create(options);
       console.log("Razorpay order created:", order.id);
       
-      // Return only necessary fields for frontend
       res.json({
         id: order.id,
         amount: order.amount,
@@ -121,7 +138,7 @@ async function startServer() {
         .digest("hex");
 
       if (expectedSignature === razorpay_signature) {
-        console.log("Payment verified successfully:", razorpay_payment_id);
+        console.log("Razorpay payment verified successfully:", razorpay_payment_id);
         res.json({ success: true });
       } else {
         console.warn("Invalid payment signature for order:", razorpay_order_id);
@@ -139,7 +156,7 @@ async function startServer() {
     }
   });
 
-  // Cashfree routes
+  // Cashfree API routes
   app.post("/api/cashfree/order", async (req, res) => {
     try {
       initCashfree();
@@ -164,7 +181,7 @@ async function startServer() {
       };
 
       const response = await (Cashfree as any).PGCreateOrder("2023-08-01", request);
-      console.log("Cashfree order created:", response.data?.order_id);
+      console.log("Cashfree order created successfully:", response.data?.order_id);
       
       if (!response.data) {
         return res.status(500).json({ 
@@ -190,15 +207,71 @@ async function startServer() {
       }
 
       const response = await (Cashfree as any).PGGetOrder("2023-08-01", orderId);
-      console.log("Cashfree order verified:", orderId);
+      const orderData = response.data;
       
-      if (!response.data) {
+      if (!orderData) {
         return res.status(500).json({ 
           error: response.message || "Failed to verify order" 
         });
       }
 
-      res.json(response.data);
+      console.log(`Cashfree order status check for ${orderId}:`, orderData.order_status);
+
+      // Verify payment details and securely update profiles table in Supabase
+      if (orderData.order_status === 'PAID' || orderData.order_status === 'SUCCESS') {
+        const parts = orderId.split('_');
+        let userId = orderData.customer_details?.customer_id;
+        
+        // Securely parse the userId from the custom session token format: ND_{userId}_{timestamp}
+        if (orderId.startsWith('ND_') && parts.length >= 2) {
+          userId = parts[1];
+        }
+
+        if (userId) {
+          console.log(`Securely upgrading user profile ${userId} in Supabase...`);
+          const supabaseAdmin = getSupabaseAdmin();
+          
+          // 1. Perform transaction check and update profiles set is_premium = true
+          const { error: profileErr } = await supabaseAdmin
+            .from('profiles')
+            .update({ 
+              is_premium: true,
+              premium_activated_at: new Date().toISOString()
+            })
+            .eq('id', userId);
+
+          if (profileErr) {
+            console.error("Supabase profile activation error:", profileErr);
+          } else {
+            console.log(`Successfully activated Premium (Lifetime) for user ID: ${userId}`);
+          }
+
+          // 2. Insert/Upsert invoice record into the payments logging table
+          const { error: paymentErr } = await supabaseAdmin
+            .from('payments')
+            .upsert({
+              user_id: userId,
+              cashfree_order_id: orderId,
+              cashfree_payment_id: orderData.cf_order_id?.toString() || orderId,
+              amount: orderData.order_amount,
+              currency: orderData.order_currency || 'INR',
+              status: 'SUCCESS',
+              plan: 'LIFETIME_PREMIUM',
+              webhook_verified: false,
+              completed_at: new Date().toISOString()
+            }, { onConflict: 'cashfree_order_id' });
+
+          if (paymentErr) {
+            console.error("Supabase payments logging error:", paymentErr);
+          } else {
+            console.log(`Billing record securely logged for Order ID: ${orderId}`);
+          }
+        } else {
+          console.warn("Missing customer ID details. Bypassing automatic profile activation.");
+        }
+      }
+
+      res.json(orderData);
     } catch (error: any) {
       console.error("Cashfree verification error:", error);
       const errorMessage = error.response?.data?.message || error.message || "Failed to verify payment";
